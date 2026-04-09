@@ -12,10 +12,14 @@ import {
   Settings,
   Bell,
   BarChart3,
-  Terminal
+  Terminal,
+  LogOut,
+  User
 } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { signOut } from "firebase/auth"
+import { useAuth, useUser } from "@/firebase"
 
 import {
   Sidebar,
@@ -29,6 +33,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const mainNav = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
@@ -47,18 +52,27 @@ const analysisNav = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const auth = useAuth()
+  const { user } = useUser()
+
+  const handleLogout = async () => {
+    if (!auth) return
+    await signOut(auth)
+    router.push('/')
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-card">
       <SidebarHeader className="h-16 flex items-center px-4 border-b border-border">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
             <BarChart3 className="text-white w-5 h-5" />
           </div>
           <span className="font-headline font-bold text-xl group-data-[collapsible=icon]:hidden">
             QuantEdge
           </span>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -104,12 +118,32 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-border">
+      <SidebarFooter className="p-4 border-t border-border space-y-2">
+        {user && (
+          <div className="flex items-center gap-3 px-2 py-2 mb-2 group-data-[collapsible=icon]:justify-center">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user.photoURL || undefined} />
+              <AvatarFallback className="bg-primary/20 text-primary">
+                <User className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 overflow-hidden group-data-[collapsible=icon]:hidden">
+              <p className="text-sm font-medium truncate">{user.displayName || 'Strategist'}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+            </div>
+          </div>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="Settings">
               <Settings />
               <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Logout" onClick={handleLogout} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+              <LogOut />
+              <span>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

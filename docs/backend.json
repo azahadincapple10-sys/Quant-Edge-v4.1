@@ -1,0 +1,10 @@
+
+{
+  "entities": {},
+  "auth": {
+    "providers": [
+      "google.com",
+      "password"
+    ]
+  }
+}
