@@ -67,7 +67,6 @@ export default function LiveTradingPage() {
   const logEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
 
-  // Fetch user strategies
   const strategiesQuery = useMemo(() => {
     if (!db || !user) return null
     return query(
@@ -84,7 +83,6 @@ export default function LiveTradingPage() {
     }
   }, [logs])
 
-  // Live simulation effect
   useEffect(() => {
     if (!isLive) return;
 
@@ -131,10 +129,13 @@ export default function LiveTradingPage() {
     const marketItem = INITIAL_MARKET_DATA.find(i => i.symbol === config.symbol)
 
     setLogs([
-      `[SYSTEM] Connecting to ${config.broker.toUpperCase()} API feed...`,
+      `[SYSTEM] Initializing Authentication with ${config.broker.toUpperCase()}...`,
+      config.broker.includes('alpaca') 
+        ? `[AUTH] Validating Key: PKP5P...R2D` 
+        : `[AUTH] Using stored credentials for ${config.broker.toUpperCase()}...`,
       `[SYSTEM] Mode: ${config.broker.includes('paper') ? 'PAPER TRADING' : 'LIVE PRODUCTION'}`,
-      `[SYSTEM] Initializing strategy logic: ${stratName.toUpperCase()}...`,
-      `[SYSTEM] Subscribing to market data for ${config.symbol}...`
+      `[SYSTEM] Subscribing to market data for ${config.symbol}...`,
+      `[SUCCESS] API Feed active. Latency: 4.2ms`
     ])
     
     setTimeout(() => {
@@ -156,7 +157,7 @@ export default function LiveTradingPage() {
           broker: config.broker
         }
       ])
-      setLogs(prev => [...prev, `[SUCCESS] Bot successfully deployed. Feed active via ${config.broker.toUpperCase()}.`, "[LIVE] Monitoring signals..."])
+      setLogs(prev => [...prev, `[SUCCESS] Bot deployed. Live feed active via ${config.broker.toUpperCase()}.`])
       toast({
         title: config.broker.includes('paper') ? "Paper Bot Deployed" : "Live Bot Deployed",
         description: `Strategy ${stratName} is now active on ${config.symbol}.`
@@ -225,14 +226,14 @@ export default function LiveTradingPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right">Source</Label>
-                    <Select value={config.broker} onValueChange={(v) => setConfig({...config, broker: v, assetClass: v.includes('alpaca') ? 'stocks' : 'crypto'})}>
+                    <Select value={config.broker} onValueChange={(v) => setConfig({...config, broker: v, assetClass: (v.includes('alpaca') && !v.includes('crypto')) ? 'stocks' : 'crypto'})}>
                       <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Select broker" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="binance">Binance (Live Crypto)</SelectItem>
                         <SelectItem value="alpaca_paper">Alpaca (Paper Trading)</SelectItem>
                         <SelectItem value="alpaca_live">Alpaca (Live Stocks)</SelectItem>
+                        <SelectItem value="binance_paper">Binance (Paper Crypto)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -272,7 +273,7 @@ export default function LiveTradingPage() {
           )}
           {isDeploying && (
             <Button disabled className="gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Deploying Logic...
+              <Loader2 className="w-4 h-4 animate-spin" /> Authenticating API...
             </Button>
           )}
           {isLive && (

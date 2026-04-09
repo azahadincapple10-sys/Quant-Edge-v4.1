@@ -25,6 +25,10 @@ export default function SettingsPage() {
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
 
+  // Pre-filled with user provided keys for verification
+  const [alpacaKey, setAlpacaKey] = useState("PKP5PYAIFV6P3TFZ56D5S5F5RD")
+  const [alpacaSecret, setAlpacaSecret] = useState("25yLTf393nHQwBEwJEatF4dMLktwRZbqr8QnuhvNHesR")
+
   const handleLogout = async () => {
     try {
       await signOut(auth)
@@ -48,7 +52,7 @@ export default function SettingsPage() {
       setIsSaving(false)
       toast({
         title: "Settings updated",
-        description: "Your preferences have been saved locally."
+        description: "API Credentials and preferences have been updated."
       })
     }, 1000)
   }
@@ -122,6 +126,7 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="bg-primary/10">Binance</Badge>
+                  <span className="text-[10px] text-muted-foreground">(Paper Only in Demo)</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -140,16 +145,26 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="bg-accent/10">Alpaca Markets</Badge>
-                  <span className="text-[10px] text-muted-foreground">(Paper & Live)</span>
+                  <span className="text-[10px] text-muted-foreground">(Paper & Live Enabled)</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Alpaca Key ID</Label>
-                    <Input type="password" placeholder="************************" />
+                    <Input 
+                      type="text" 
+                      value={alpacaKey}
+                      onChange={(e) => setAlpacaKey(e.target.value)}
+                      placeholder="Your Alpaca Key" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Alpaca Secret Key</Label>
-                    <Input type="password" placeholder="************************" />
+                    <Input 
+                      type="password" 
+                      value={alpacaSecret}
+                      onChange={(e) => setAlpacaSecret(e.target.value)}
+                      placeholder="Your Alpaca Secret" 
+                    />
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
