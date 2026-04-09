@@ -43,9 +43,9 @@ const optimizeStrategyPrompt = ai.definePrompt({
 Your task is to analyze a given trading strategy and an optimization goal, then suggest optimal parameters and potential code modifications to improve its performance.
 
 ### Trading Strategy Code:
-```python
+\`\`\`python
 {{{strategyCode}}}
-```
+\`\`\`
 
 ### Optimization Goal:
 {{{optimizationGoal}}}

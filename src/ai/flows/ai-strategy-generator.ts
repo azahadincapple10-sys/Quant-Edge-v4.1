@@ -57,14 +57,14 @@ const aiStrategyGeneratorPrompt = ai.definePrompt({
   prompt: `You are an expert algorithmic trading strategist specializing in the Jesse framework. Your task is to generate clean, runnable strategy code based on a natural language description.
 
 Consider the following details about the Jesse framework:
-- Strategies are typically Python classes inheriting from `Strategy`.
-- Indicators are accessed via `ta.indicator(self.candles, period)`.
-- Order placement uses `self.buy`, `self.sell`, `self.take_profit`, `self.stop_loss`.
-- Quantity calculation can use `utils.size_to_qty(capital_percentage, entry_price)`.
-- Hyperparameters are defined in a `hyperparameters()` method and accessed via `self.hp['param_name']`.
+- Strategies are typically Python classes inheriting from \`Strategy\`.
+- Indicators are accessed via \`ta.indicator(self.candles, period)\`.
+- Order placement uses \`self.buy\`, \`self.sell\`, \`self.take_profit\`, \`self.stop_loss\`.
+- Quantity calculation can use \`utils.size_to_qty(capital_percentage, entry_price)\`.
+- Hyperparameters are defined in a \`hyperparameters()\` method and accessed via \`self.hp['param_name']\`.
 
 Here's an example of a Jesse strategy:
-```python
+\`\`\`python
 class GoldenCross(Strategy):
     def should_long(self):
         short_ema = ta.ema(self.candles, 8)
@@ -83,21 +83,21 @@ class GoldenCross(Strategy):
             {'name': 'slow_sma_period', 'type': int, 'min': 150, 'max': 210, 'default': 200},
             {'name': 'fast_sma_period', 'type': int, 'min': 20, 'max': 100, 'default': 50},
         ]
-```
+\`\`\`
 
-Your goal is to output a JSON object with two fields: `generatedCode` (the strategy code) and `explanation` (a brief description).
+Your goal is to output a JSON object with two fields: \`generatedCode\` (the strategy code) and \`explanation\` (a brief description).
 
 ## Strategy Description:
 {{{strategyDescription}}}
 
 {{#if existingCode}}
 ## Existing Code to Consider/Modify:
-```{{{programmingLanguage}}}
+\`\`\`{{{programmingLanguage}}}
 {{{existingCode}}}
-```
+\`\`\`
 {{/if}}
 
-Generate the strategy code in the requested `programmingLanguage` (defaulting to Python) within the `generatedCode` field, and provide a concise `explanation`.`,
+Generate the strategy code in the requested \`programmingLanguage\` (defaulting to Python) within the \`generatedCode\` field, and provide a concise \`explanation\`.`,
 });
 
 const aiStrategyGeneratorFlow = ai.defineFlow(
