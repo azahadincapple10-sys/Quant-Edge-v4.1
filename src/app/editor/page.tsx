@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Code2, Sparkles, Play, Save, Bug, Search, 
-  Terminal, Lightbulb, Wand2, ArrowRight, Plus, FolderOpen, Loader2
+  Terminal, Lightbulb, Wand2, ArrowRight, Plus, FolderOpen, Loader2, Trash2
 } from "lucide-react"
 import { generateStrategy } from '@/ai/flows/ai-strategy-generator'
 import { useToast } from "@/hooks/use-toast"
@@ -43,6 +43,11 @@ export default function EditorPage() {
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([
+    "[SYSTEM] Environment ready.",
+    "[INFO] ta library initialized (300+ indicators ready).",
+    "[READY] Draft your logic or use JesseGPT."
+  ])
 
   // Fetch user strategies
   const strategiesQuery = useMemo(() => {
@@ -58,6 +63,7 @@ export default function EditorPage() {
   const handleAiGenerate = async () => {
     if (!prompt) return
     setIsGenerating(true)
+    setConsoleLogs(prev => [...prev, `[AI] Generating strategy based on prompt: "${prompt.substring(0, 30)}..."`])
     try {
       const result = await generateStrategy({
         strategyDescription: prompt,
@@ -66,12 +72,14 @@ export default function EditorPage() {
       })
       if (result.generatedCode) {
         setCode(result.generatedCode)
+        setConsoleLogs(prev => [...prev, "[AI] Code generation complete. Logic updated in editor."])
         toast({
           title: "Strategy Generated",
           description: "AI has successfully drafted your trading logic."
         })
       }
     } catch (error) {
+      setConsoleLogs(prev => [...prev, "[ERROR] AI generation failed. Please check your connection."])
       toast({
         variant: "destructive",
         title: "Error",
@@ -83,12 +91,20 @@ export default function EditorPage() {
   }
 
   const handleSave = async () => {
-    if (!user || !db) return
+    if (!user || !db) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please sign in to save strategies."
+      })
+      return
+    }
+    
     setIsSaving(true)
     const strategyId = currentStrategyId || doc(collection(db, 'temp')).id
     
     const strategyData = {
-      name,
+      name: name || "Untitled Strategy",
       code,
       updatedAt: serverTimestamp(),
       userId: user.uid
@@ -97,11 +113,13 @@ export default function EditorPage() {
     try {
       await setDoc(doc(db, 'users', user.uid, 'strategies', strategyId), strategyData, { merge: true })
       setCurrentStrategyId(strategyId)
+      setConsoleLogs(prev => [...prev, `[SUCCESS] Strategy "${strategyData.name}" saved successfully.`])
       toast({
         title: "Strategy Saved",
-        description: `Successfully saved "${name}".`
+        description: `Successfully saved "${strategyData.name}".`
       })
     } catch (error: any) {
+      setConsoleLogs(prev => [...prev, `[ERROR] Failed to save: ${error.message}`])
       toast({
         variant: "destructive",
         title: "Save Failed",
@@ -112,17 +130,44 @@ export default function EditorPage() {
     }
   }
 
+  const handleDelete = async (e: React.MouseEvent, stratId: string, stratName: string) => {
+    e.stopPropagation()
+    if (!user || !db) return
+
+    if (!confirm(`Are you sure you want to delete "${stratName}"?`)) return
+
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'strategies', stratId))
+      if (currentStrategyId === stratId) {
+        handleNew()
+      }
+      setConsoleLogs(prev => [...prev, `[SYSTEM] Strategy "${stratName}" deleted.`])
+      toast({
+        title: "Strategy Deleted",
+        description: `"${stratName}" has been removed.`
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: error.message
+      })
+    }
+  }
+
   const handleNew = () => {
     setCurrentStrategyId(null)
     setName("New Strategy")
     setCode("")
     setPrompt("")
+    setConsoleLogs(prev => [...prev, "[SYSTEM] New buffer created."])
   }
 
   const selectStrategy = (strat: any) => {
     setCurrentStrategyId(strat.id)
     setName(strat.name)
     setCode(strat.code)
+    setConsoleLogs(prev => [...prev, `[LOADED] Strategy: ${strat.name}`])
   }
 
   return (
@@ -166,16 +211,16 @@ export default function EditorPage() {
               spellCheck="false"
              />
           </div>
-          <div className="h-32 border-t border-border bg-card overflow-hidden flex flex-col">
+          <div className="h-40 border-t border-border bg-card overflow-hidden flex flex-col">
             <div className="px-3 py-1 border-b border-border bg-muted/50 flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                 <Terminal className="w-3 h-3" /> Console Output
               </span>
             </div>
             <div className="flex-1 p-3 font-code text-xs text-green-500/80 overflow-y-auto">
-              [SYSTEM] Environment ready.<br />
-              [INFO] ta library initialized (300+ indicators ready).<br />
-              {currentStrategyId ? `[LOADED] Strategy: ${name}` : '[READY] Draft your logic or use JesseGPT.'}
+              {consoleLogs.map((log, i) => (
+                <div key={i}>{log}</div>
+              ))}
             </div>
           </div>
         </div>
@@ -214,7 +259,7 @@ export default function EditorPage() {
                     onClick={handleAiGenerate}
                     disabled={isGenerating || !prompt}
                   >
-                    {isGenerating ? "Thinking..." : "Generate Logic"} <Wand2 className="w-4 h-4 ml-2" />
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Generate Logic"} <Wand2 className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
 
@@ -242,19 +287,27 @@ export default function EditorPage() {
                 <div className="space-y-2">
                   {loadingStrategies ? (
                     <div className="flex justify-center p-4"><Loader2 className="animate-spin text-muted-foreground" /></div>
-                  ) : savedStrategies.length === 0 ? (
+                  ) : !savedStrategies || savedStrategies.length === 0 ? (
                     <div className="text-center p-8 text-xs text-muted-foreground">No saved strategies found.</div>
                   ) : (
-                    savedStrategies.map((strat) => (
+                    savedStrategies.map((strat: any) => (
                       <div 
                         key={strat.id} 
                         onClick={() => selectStrategy(strat)}
-                        className={`p-3 rounded border border-border hover:bg-muted cursor-pointer transition-colors ${currentStrategyId === strat.id ? 'bg-primary/10 border-primary/30' : ''}`}
+                        className={`p-3 rounded border border-border hover:bg-muted cursor-pointer transition-colors group relative ${currentStrategyId === strat.id ? 'bg-primary/10 border-primary/30' : ''}`}
                       >
-                        <div className="font-bold text-sm truncate">{strat.name}</div>
+                        <div className="font-bold text-sm truncate pr-8">{strat.name}</div>
                         <div className="text-[10px] text-muted-foreground mt-1">
-                          Last updated: {strat.updatedAt?.toDate().toLocaleDateString()}
+                          Last updated: {strat.updatedAt?.toDate ? strat.updatedAt.toDate().toLocaleDateString() : 'Just now'}
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleDelete(e, strat.id, strat.name)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </div>
                     ))
                   )}

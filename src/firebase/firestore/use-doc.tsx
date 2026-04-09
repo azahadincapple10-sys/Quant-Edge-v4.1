@@ -23,7 +23,10 @@ export function useDoc<T = DocumentData>(docRef: DocumentReference<T> | null) {
     const unsubscribe = onSnapshot(
       docRef,
       (snapshot: DocumentSnapshot<T>) => {
-        setData(snapshot.data() || null);
+        const result = snapshot.exists() 
+          ? { ...(snapshot.data() as any), id: snapshot.id } 
+          : null;
+        setData(result);
         setLoading(false);
       },
       (err) => {

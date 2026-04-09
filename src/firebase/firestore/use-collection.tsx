@@ -23,7 +23,10 @@ export function useCollection<T = DocumentData>(query: Query<T> | null) {
     const unsubscribe = onSnapshot(
       query,
       (snapshot: QuerySnapshot<T>) => {
-        const items = snapshot.docs.map((doc) => doc.data());
+        const items = snapshot.docs.map((doc) => ({
+          ...(doc.data() as any),
+          id: doc.id,
+        }));
         setData(items);
         setLoading(false);
       },
