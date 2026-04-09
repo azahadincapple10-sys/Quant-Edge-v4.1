@@ -10,8 +10,8 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { 
-  User, Shield, Bell, Zap, LogOut, Key, 
-  Settings as SettingsIcon, Save, AlertTriangle 
+  User, Shield, Bell, LogOut, Key, 
+  Save, AlertTriangle, Globe
 } from "lucide-react"
 import { useAuth, useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
@@ -66,7 +66,6 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Navigation / Sidebar within settings */}
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
@@ -111,30 +110,52 @@ export default function SettingsPage() {
           </Card>
         </div>
 
-        {/* Settings Forms */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-primary" /> API Connectivity
+                <Key className="w-5 h-5 text-primary" /> Exchange Connectivity
               </CardTitle>
-              <CardDescription>Configure your exchange API keys for live trading execution.</CardDescription>
+              <CardDescription>Configure your API keys for data sources and live execution.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Binance API Key</Label>
-                <Input type="password" placeholder="************************" />
-              </div>
-              <div className="space-y-2">
-                <Label>Binance API Secret</Label>
-                <Input type="password" placeholder="************************" />
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                <div className="space-y-0.5">
-                  <div className="text-sm font-medium">Enable Live Trading</div>
-                  <div className="text-xs text-muted-foreground">Allow the platform to execute trades on your behalf.</div>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-primary/10">Binance</Badge>
                 </div>
-                <Switch />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>API Key</Label>
+                    <Input type="password" placeholder="************************" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>API Secret</Label>
+                    <Input type="password" placeholder="************************" />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-accent/10">Alpaca Markets</Badge>
+                  <span className="text-[10px] text-muted-foreground">(Paper & Live)</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Alpaca Key ID</Label>
+                    <Input type="password" placeholder="************************" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Alpaca Secret Key</Label>
+                    <Input type="password" placeholder="************************" />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch id="alpaca-paper" defaultChecked />
+                  <Label htmlFor="alpaca-paper" className="text-xs">Use Alpaca Paper Trading by default</Label>
+                </div>
               </div>
             </CardContent>
           </Card>

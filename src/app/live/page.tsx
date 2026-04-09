@@ -13,10 +13,10 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger 
 } from "@/components/ui/dialog"
 import { 
-  Play, Pause, Activity, Zap, ShieldCheck, 
+  Play, Activity, Zap, ShieldCheck, 
   ArrowUpRight, ArrowDownRight, RefreshCw,
   Terminal, StopCircle, Settings2, AlertTriangle,
-  Loader2, Plus, Coins, BarChart3
+  Loader2, Plus, Globe
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useUser, useCollection } from '@/firebase'
@@ -33,11 +33,13 @@ interface LiveTrade {
   currentPrice: string;
   status: 'OPEN' | 'CLOSED';
   timestamp: string;
+  broker?: string;
 }
 
 interface DeploymentConfig {
   strategy: string;
   assetClass: string;
+  broker: string;
   symbol: string;
   amount: string;
   timeframe: string;
@@ -55,6 +57,7 @@ export default function LiveTradingPage() {
   const [config, setConfig] = useState<DeploymentConfig>({
     strategy: '',
     assetClass: 'crypto',
+    broker: 'binance',
     symbol: 'BTC/USDT',
     amount: '5000',
     timeframe: '1h'
@@ -103,10 +106,10 @@ export default function LiveTradingPage() {
 
       if (Math.random() > 0.9) {
         const msgs = [
-          `[STRATEGY] Processing ${config.symbol} ${config.timeframe} data...`,
-          "[EXCHANGE] Heartbeat: Latency 4.2ms",
+          `[STRATEGY] Processing ${config.symbol} ${config.timeframe} data via ${config.broker.toUpperCase()}...`,
+          `[EXCHANGE] Heartbeat (${config.broker}): Latency 4.2ms`,
           "[RISK] Margin level check: Healthy",
-          `[ORDER] Updating trailing stop for ${config.symbol}...`
+          `[ORDER] Updating trailing stop for ${config.symbol} on ${config.broker.toUpperCase()}...`
         ];
         setLogs(prev => [...prev.slice(-49), msgs[Math.floor(Math.random() * msgs.length)]]);
       }
@@ -124,9 +127,10 @@ export default function LiveTradingPage() {
     const stratName = savedStrategies.find(s => s.id === config.strategy)?.name || "Bot"
 
     setLogs([
-      `[SYSTEM] Initializing secure connection for ${config.assetClass.toUpperCase()}...`,
+      `[SYSTEM] Connecting to ${config.broker.toUpperCase()} API...`,
+      `[SYSTEM] Mode: ${config.broker === 'alpaca_paper' ? 'PAPER TRADING' : 'LIVE PRODUCTION'}`,
       `[SYSTEM] Validating strategy: ${stratName.toUpperCase()}...`,
-      `[SYSTEM] Allocation confirmed: $${parseFloat(config.amount).toLocaleString()}`
+      `[SYSTEM] Initializing stream for ${config.symbol}...`
     ])
     
     setTimeout(() => {
@@ -139,17 +143,18 @@ export default function LiveTradingPage() {
           strategy: stratName, 
           side: 'LONG', 
           pnl: 0.00, 
-          amount: `${(parseFloat(config.amount) / 64000).toFixed(4)} UNIT`, 
-          entryPrice: '64,120.50',
-          currentPrice: '64,120.50',
+          amount: `${(parseFloat(config.amount) / (config.assetClass === 'stocks' ? 180 : 64000)).toFixed(4)} UNIT`, 
+          entryPrice: config.assetClass === 'stocks' ? '182.41' : '64,120.50',
+          currentPrice: config.assetClass === 'stocks' ? '182.41' : '64,120.50',
           status: 'OPEN',
-          timestamp: new Date().toLocaleTimeString()
+          timestamp: new Date().toLocaleTimeString(),
+          broker: config.broker
         }
       ])
-      setLogs(prev => [...prev, "[SUCCESS] Bot successfully deployed to production.", "[LIVE] Monitoring signals..."])
+      setLogs(prev => [...prev, `[SUCCESS] Bot successfully deployed to ${config.broker.toUpperCase()}.`, "[LIVE] Monitoring signals..."])
       toast({
-        title: "Bot Deployed",
-        description: `Strategy ${stratName} is now live on ${config.symbol}.`
+        title: config.broker === 'alpaca_paper' ? "Paper Bot Deployed" : "Live Bot Deployed",
+        description: `Strategy ${stratName} is now active on ${config.symbol} via ${config.broker}.`
       })
     }, 2500)
   }
@@ -161,7 +166,7 @@ export default function LiveTradingPage() {
     toast({
       variant: "destructive",
       title: "Bot Stopped",
-      description: "Live trading session has been terminated."
+      description: "Trading session has been terminated."
     })
   }
 
@@ -175,8 +180,8 @@ export default function LiveTradingPage() {
     <div className="flex-1 flex flex-col p-6 space-y-6 overflow-auto">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Live Trading</h1>
-          <p className="text-muted-foreground">Monitor and control your active algorithmic sessions in real-time.</p>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Execution Console</h1>
+          <p className="text-muted-foreground">Manage your live and paper trading sessions across Binance and Alpaca.</p>
         </div>
         <div className="flex gap-2">
           {isLive && (
@@ -193,14 +198,14 @@ export default function LiveTradingPage() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] bg-card border-border">
                 <DialogHeader>
-                  <DialogTitle className="font-headline">Deploy New Strategy</DialogTitle>
+                  <DialogTitle className="font-headline">Deploy Session</DialogTitle>
                   <DialogDescription>
-                    Configure your execution parameters for live market deployment.
+                    Select your strategy and execution environment.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="strategy" className="text-right">Strategy</Label>
+                    <Label className="text-right">Strategy</Label>
                     <Select value={config.strategy} onValueChange={(v) => setConfig({...config, strategy: v})}>
                       <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Select strategy" />
@@ -214,58 +219,45 @@ export default function LiveTradingPage() {
                     </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="asset" className="text-right">Asset Class</Label>
-                    <Select value={config.assetClass} onValueChange={(v) => setConfig({...config, assetClass: v})}>
+                    <Label className="text-right">Source</Label>
+                    <Select value={config.broker} onValueChange={(v) => setConfig({...config, broker: v, assetClass: v.includes('alpaca') ? 'stocks' : 'crypto'})}>
                       <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select asset" />
+                        <SelectValue placeholder="Select broker" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                        <SelectItem value="stocks">US Stocks</SelectItem>
-                        <SelectItem value="commodities">Commodities</SelectItem>
-                        <SelectItem value="prop">Prop (Forex/Indices)</SelectItem>
+                        <SelectItem value="binance">Binance (Live Crypto)</SelectItem>
+                        <SelectItem value="alpaca_paper">Alpaca (Paper Trading)</SelectItem>
+                        <SelectItem value="alpaca_live">Alpaca (Live Stocks/Crypto)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="symbol" className="text-right">Symbol</Label>
+                    <Label className="text-right">Asset</Label>
+                    <Badge variant="outline" className="col-span-3 h-10 flex justify-start px-3 font-normal capitalize">
+                      {config.assetClass}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Symbol</Label>
                     <Input 
-                      id="symbol" 
                       value={config.symbol} 
                       onChange={(e) => setConfig({...config, symbol: e.target.value})}
                       className="col-span-3" 
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="amount" className="text-right">Amount ($)</Label>
+                    <Label className="text-right">Cap ($)</Label>
                     <Input 
-                      id="amount" 
                       type="number"
                       value={config.amount} 
                       onChange={(e) => setConfig({...config, amount: e.target.value})}
                       className="col-span-3" 
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="timeframe" className="text-right">Timeframe</Label>
-                    <Select value={config.timeframe} onValueChange={(v) => setConfig({...config, timeframe: v})}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select interval" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1m">1 Minute</SelectItem>
-                        <SelectItem value="5m">5 Minutes</SelectItem>
-                        <SelectItem value="15m">15 Minutes</SelectItem>
-                        <SelectItem value="1h">1 Hour</SelectItem>
-                        <SelectItem value="4h">4 Hours</SelectItem>
-                        <SelectItem value="1d">1 Day</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
                 <DialogFooter>
                   <Button onClick={deployBot} className="w-full bg-primary hover:bg-primary/90" disabled={!config.strategy}>
-                    <Play className="w-4 h-4 mr-2" /> Start Live Execution
+                    <Play className="w-4 h-4 mr-2" /> Start Execution
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -289,16 +281,18 @@ export default function LiveTradingPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2 font-headline">
-                <Activity className="w-4 h-4 text-primary" /> Active Executions
+                <Activity className="w-4 h-4 text-primary" /> Active Sessions
               </CardTitle>
-              {isLive && <Badge className="bg-green-500 animate-pulse">LIVE CONNECTED</Badge>}
+              {isLive && <Badge className={config.broker === 'alpaca_paper' ? "bg-accent text-accent-foreground" : "bg-green-500"}>
+                {config.broker === 'alpaca_paper' ? 'PAPER ACTIVE' : 'LIVE ACTIVE'}
+              </Badge>}
             </CardHeader>
             <CardContent>
               {!isLive && !isDeploying ? (
                 <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-lg opacity-40">
-                  <Zap className="w-8 h-8 mb-2" />
-                  <p className="text-sm font-medium">No bots currently active</p>
-                  <p className="text-xs text-muted-foreground mt-1">Configure a new session to begin trading</p>
+                  <Globe className="w-8 h-8 mb-2" />
+                  <p className="text-sm font-medium">No active connections</p>
+                  <p className="text-xs text-muted-foreground mt-1">Deploy a strategy to Binance or Alpaca to begin</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -311,7 +305,7 @@ export default function LiveTradingPage() {
                         <div>
                           <div className="font-bold flex items-center gap-2">
                             {trade.pair} 
-                            <Badge variant="outline" className="text-[10px] font-normal uppercase">{trade.side}</Badge>
+                            <Badge variant="outline" className="text-[10px] font-normal uppercase">{trade.broker?.replace('_', ' ')}</Badge>
                           </div>
                           <div className="text-xs text-muted-foreground">{trade.strategy} • {trade.amount}</div>
                           <div className="text-[10px] font-mono text-muted-foreground/60 mt-1">Entry: {trade.entryPrice} | Cur: {trade.currentPrice}</div>
@@ -323,7 +317,6 @@ export default function LiveTradingPage() {
                         </div>
                         <div className="flex gap-2 mt-2">
                           <Button variant="ghost" size="icon" className="h-7 w-7"><Settings2 className="w-3 h-3" /></Button>
-                          <Button variant="outline" size="sm" className="h-7 text-[10px]">CLOSE</Button>
                         </div>
                       </div>
                     </div>
@@ -336,11 +329,10 @@ export default function LiveTradingPage() {
           <Card className="bg-black/90 border-primary/20">
             <CardHeader className="py-3 border-b border-white/5">
               <CardTitle className="text-xs font-mono text-primary flex items-center gap-2">
-                <Terminal className="w-3 h-3" /> LIVE_EXECUTION_LOG
+                <Terminal className="w-3 h-3" /> BROKER_FEED_STREAM
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 h-48 overflow-y-auto font-mono text-[10px] space-y-1">
-              {logs.length === 0 && <div className="text-muted-foreground/50">Waiting for bot deployment...</div>}
               {logs.map((log, i) => (
                 <div key={i} className={log.includes('[CRITICAL]') ? 'text-red-400' : log.includes('[SUCCESS]') ? 'text-green-400' : 'text-blue-300'}>
                   <span className="opacity-40 mr-2">[{new Date().toLocaleTimeString()}]</span>
@@ -355,12 +347,12 @@ export default function LiveTradingPage() {
         <div className="space-y-6">
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Session Equity</CardTitle>
+              <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold font-mono">${equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div className="flex items-center gap-2 mt-2 text-green-500 text-xs font-bold">
-                <ArrowUpRight className="w-3 h-3" /> 2.4% (Today)
+              <div className="text-3xl font-bold font-mono">${equity.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+              <div className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">
+                Current Source: {isLive ? config.broker.replace('_', ' ') : 'N/A'}
               </div>
             </CardContent>
           </Card>
@@ -379,18 +371,12 @@ export default function LiveTradingPage() {
                 </div>
                 <Progress value={isLive ? (parseFloat(config.amount) / 50000) * 100 : 0} className="h-1.5" />
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-muted-foreground">Daily Loss Limit</span>
-                  <span className="font-mono text-primary">$450 / $5,000</span>
-                </div>
-                <Progress value={9} className="h-1.5" />
-              </div>
               <div className="pt-2">
                 <div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground">
-                  <span>Server Status</span>
-                  <span className="flex items-center gap-1 text-green-500">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> AWS-TYO-LIVE
+                  <span>Connection Status</span>
+                  <span className={`flex items-center gap-1 ${isLive ? 'text-green-500' : 'text-yellow-500'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} /> 
+                    {isLive ? 'STABLE' : 'IDLE'}
                   </span>
                 </div>
               </div>
@@ -400,12 +386,12 @@ export default function LiveTradingPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <RefreshCw className={`w-4 h-4 text-primary ${isLive ? 'animate-spin' : ''}`} /> Latency
+                <RefreshCw className={`w-4 h-4 text-primary ${isLive ? 'animate-spin' : ''}`} /> Data Latency
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-mono">4.2ms</div>
-              <p className="text-xs text-muted-foreground mt-1">Direct-API connected</p>
+              <div className="text-2xl font-bold font-mono">{isLive ? '4.2ms' : '--'}</div>
+              <p className="text-xs text-muted-foreground mt-1">Websocket connected via {config.broker.includes('alpaca') ? 'Alpaca' : 'Binance'}</p>
             </CardContent>
           </Card>
         </div>
