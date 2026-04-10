@@ -54,7 +54,7 @@ const getMarketSentiment = ai.defineTool(
     }),
     outputSchema: z.object({
       score: z.number().describe('Sentiment score from -1 (very bearish) to 1 (very bullish)'),
-      topHeadlines: z.util.array(z.string()),
+      topHeadlines: z.array(z.string()),
       impact: z.string(),
     }),
   },
