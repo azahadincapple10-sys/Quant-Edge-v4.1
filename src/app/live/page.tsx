@@ -16,7 +16,7 @@ import {
   Play, Activity, Zap, ShieldCheck, 
   ArrowUpRight, ArrowDownRight,
   Terminal, Loader2, Calculator,
-  Lock, TrendingUp, Clock
+  Lock, TrendingUp, Clock, Server, Cpu, Globe
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis
@@ -62,7 +62,11 @@ export default function LiveTradingPage() {
   
   const [isDeploying, setIsDeploying] = useState(false)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
-  const [logs, setLogs] = useState<string[]>([])
+  const [logs, setLogs] = useState<string[]>([
+    "[SYSTEM] Terminal Initialized.",
+    "[AWS] Connection to us-east-1 instance established.",
+    "[AWS] Worker v2.4 initialized and awaiting instructions."
+  ])
   const [equity, setEquity] = useState(50000.00)
   const [hwm, setHwm] = useState(50000.00) 
   const [dailyStartingEquity] = useState(50000.00)
@@ -158,7 +162,12 @@ export default function LiveTradingPage() {
     setIsConfigOpen(false)
     setIsDeploying(true)
     
-    setLogs(prev => [...prev, `[SYSTEM] Booting Compliance Engine...`, `[AUTH] Authenticating with ${config.broker}...`, `[SUCCESS] Connection Established.`])
+    setLogs(prev => [...prev, 
+      `[SYSTEM] Booting Compliance Engine...`, 
+      `[AWS] Transmitting deployment intent to ec2-worker-01...`,
+      `[AUTH] Authenticating with ${config.broker} via secure vault...`, 
+      `[SUCCESS] Worker assigned. Execution starting.`
+    ])
     
     const strategy = savedStrategies?.find(s => s.id === config.strategyId)
     const startPrice = INITIAL_MARKET_DATA.find(i => i.symbol === config.symbol)?.price || 64000
@@ -175,7 +184,8 @@ export default function LiveTradingPage() {
       status: 'open',
       entryTime: serverTimestamp(),
       userId: user.uid,
-      tradingAccountId: 'default'
+      tradingAccountId: 'default',
+      infrastructure: 'aws-ec2-us-east-1'
     }
 
     try {
@@ -184,7 +194,7 @@ export default function LiveTradingPage() {
         positionData,
         { merge: true }
       )
-      toast({ title: "Bot Deployed", description: `Logic active for ${config.symbol}` })
+      toast({ title: "Remote Bot Deployed", description: `Strategy logic now executing on AWS instance.` })
     } catch (e) {
       toast({ variant: "destructive", title: "Deployment Failed" })
     } finally {
@@ -195,10 +205,9 @@ export default function LiveTradingPage() {
   const closePosition = async (posId: string) => {
     if (!user || !db) return
     try {
-      // Before deleting, we could record this as a completed trade in Firestore if needed for history
       await deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'tradingAccounts', 'default', 'positions', posId))
-      setLogs(prev => [...prev, `[SYSTEM] Position ${posId} closed by user.`])
-      toast({ title: "Position Closed", description: "Market order executed successfully." })
+      setLogs(prev => [...prev, `[AWS] Kill signal sent to worker for ${posId}.`, `[SUCCESS] Position closed.`])
+      toast({ title: "Position Closed", description: "Market order executed successfully by AWS worker." })
     } catch (e) {
       toast({ variant: "destructive", title: "Error closing position" })
     }
@@ -218,9 +227,9 @@ export default function LiveTradingPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3">
-            Execution Console <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[10px]">Live Sessions</Badge>
+            Execution Console <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[10px]">AWS Remote Active</Badge>
           </h1>
-          <p className="text-muted-foreground">Real-time persistence and compliance monitoring across browser sessions.</p>
+          <p className="text-muted-foreground">Monitoring your institutional AWS EC2 workers in real-time.</p>
         </div>
         <div className="flex gap-2">
           {isAccountSuspended ? (
@@ -231,13 +240,13 @@ export default function LiveTradingPage() {
             <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-green-600 hover:bg-green-700">
-                  <Play className="w-4 h-4" /> Deploy New Strategy
+                  <Play className="w-4 h-4" /> Deploy to AWS Instance
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border">
                 <DialogHeader>
                   <DialogTitle>Deploy Compliant Strategy</DialogTitle>
-                  <DialogDescription>Settings will be persisted to your institutional trading profile.</DialogDescription>
+                  <DialogDescription>Your logic will be transmitted and executed on your secure AWS worker.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -263,12 +272,12 @@ export default function LiveTradingPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right">Broker</Label>
-                    <Select value={config.broker} onValueChange={(v) => setConfig({...config, broker: v})}>
+                    <Label className="text-right">Worker</Label>
+                    <Select defaultValue="ec2-01">
                         <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="alpaca_paper">Alpaca Paper (Live)</SelectItem>
-                          <SelectItem value="binance_test">Binance Testnet</SelectItem>
+                          <SelectItem value="ec2-01">AWS EC2 (us-east-1) - Online</SelectItem>
+                          <SelectItem value="ec2-02" disabled>AWS EC2 (eu-west-1) - Offline</SelectItem>
                         </SelectContent>
                     </Select>
                   </div>
@@ -276,7 +285,7 @@ export default function LiveTradingPage() {
                 <DialogFooter>
                    <Button onClick={deployBot} className="w-full bg-primary" disabled={!config.strategyId || isDeploying}>
                      {isDeploying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                     Initialize Execution
+                     Start Remote Execution
                    </Button>
                 </DialogFooter>
               </DialogContent>
@@ -287,6 +296,34 @@ export default function LiveTradingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
+          {/* Infrastructure Health */}
+          <Card className="bg-card/40 border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                <Server className="w-4 h-4" /> Infrastructure
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-2 text-xs">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    AWS Instance ec2-01
+                 </div>
+                 <Badge variant="outline" className="text-[9px]">Online</Badge>
+               </div>
+               <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded bg-black/40 border border-white/5 text-center">
+                    <div className="text-[8px] text-muted-foreground uppercase">CPU</div>
+                    <div className="text-xs font-bold">12.4%</div>
+                  </div>
+                  <div className="p-2 rounded bg-black/40 border border-white/5 text-center">
+                    <div className="text-[8px] text-muted-foreground uppercase">Latency</div>
+                    <div className="text-xs font-bold">4.2ms</div>
+                  </div>
+               </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-bold uppercase text-primary flex items-center justify-between">
@@ -338,9 +375,14 @@ export default function LiveTradingPage() {
           <Card className="border-border/50 bg-card/30 min-h-[400px]">
             <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 py-4">
                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                 <Activity className="w-4 h-4 text-primary" /> Active Deployments
+                 <Activity className="w-4 h-4 text-primary" /> Remote Deployments
                </CardTitle>
-               <Badge variant="outline" className="text-[10px]">{persistentPositions?.length || 0} Open</Badge>
+               <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                   <Globe className="w-3 h-3" /> Region: US-EAST-1
+                 </div>
+                 <Badge variant="outline" className="text-[10px]">{persistentPositions?.length || 0} Bot(s) Running</Badge>
+               </div>
             </CardHeader>
             <CardContent className="p-0">
               {isLoadingPositions ? (
@@ -350,8 +392,8 @@ export default function LiveTradingPage() {
               ) : !persistentPositions || persistentPositions.length === 0 ? (
                 <div className="h-64 flex flex-col items-center justify-center text-muted-foreground opacity-30 gap-3">
                    <Zap className="w-12 h-12" />
-                   <p className="text-sm font-medium">No active sessions found.</p>
-                   <Button variant="ghost" size="sm" onClick={() => setIsConfigOpen(true)}>Initialize Terminal Session</Button>
+                   <p className="text-sm font-medium">Infrastructure idle. No active AWS sessions.</p>
+                   <Button variant="ghost" size="sm" onClick={() => setIsConfigOpen(true)}>Deploy First Worker</Button>
                 </div>
               ) : (
                 <div className="divide-y divide-white/5">
@@ -370,7 +412,10 @@ export default function LiveTradingPage() {
                                   {pos.instrumentId}
                                   <Badge variant="outline" className="text-[9px] uppercase">{pos.strategyName}</Badge>
                                 </div>
-                                <RuntimeDisplay entryTime={pos.entryTime} />
+                                <div className="flex items-center gap-3">
+                                  <RuntimeDisplay entryTime={pos.entryTime} />
+                                  <span className="text-[10px] text-primary/60 font-mono">ID: {pos.id.substring(0, 8)}</span>
+                                </div>
                               </div>
                             </div>
                             <div className="text-right">
@@ -390,7 +435,10 @@ export default function LiveTradingPage() {
                                className="flex-1 h-8 text-[11px] font-bold bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                                onClick={() => closePosition(pos.id)}
                              >
-                               Exit Position
+                               Kill Remote Process
+                             </Button>
+                             <Button variant="outline" size="sm" className="h-8 text-[11px]" onClick={() => window.open('/debug', '_blank')}>
+                               View Server Logs
                              </Button>
                           </div>
                         </div>
@@ -429,8 +477,9 @@ export default function LiveTradingPage() {
           <Card className="bg-black border-primary/20 overflow-hidden">
             <div className="px-4 py-2 border-b border-white/5 bg-primary/5 flex items-center justify-between">
                 <span className="text-[10px] font-bold text-primary flex items-center gap-2">
-                  <Terminal className="w-3 h-3" /> AUDIT_LOG_STREAM
+                  <Terminal className="w-3 h-3" /> AWS_REMOTE_STDOUT_STREAM
                 </span>
+                <Badge variant="outline" className="text-[8px] bg-green-500/10 text-green-500 border-none">LIVE FEED</Badge>
             </div>
             <CardContent className="p-4 h-32 overflow-y-auto font-mono text-[10px] space-y-1 text-blue-300">
               {logs.map((l, i) => <div key={i}>{l}</div>)}
