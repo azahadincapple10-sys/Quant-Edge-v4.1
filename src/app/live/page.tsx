@@ -20,7 +20,7 @@ import {
   BarChart4, ArrowRightLeft
 } from "lucide-react"
 import { 
-  AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip
+  AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
 } from 'recharts'
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
@@ -128,7 +128,7 @@ export default function LiveTradingPage() {
             pnl: 0, 
             profitUsd: 0,
             tradeCount: pos.tradeCount || 1,
-            chart: Array.from({length: 10}, (_, i) => ({ val: pos.entryPrice })) 
+            chart: Array.from({length: 20}, (_, i) => ({ val: pos.entryPrice + (Math.random() - 0.5) * (pos.entryPrice * 0.01), t: i })) 
           }
           
           const change = (Math.random() - 0.49) * (basePrice * 0.001)
@@ -141,7 +141,7 @@ export default function LiveTradingPage() {
             pnl: pnl,
             profitUsd: profitUsd,
             tradeCount: currentData.tradeCount,
-            chart: [...currentData.chart.slice(-24), { val: newPrice }]
+            chart: [...currentData.chart.slice(-24), { val: newPrice, t: currentData.chart.length }]
           }
         })
         return next
@@ -481,31 +481,47 @@ export default function LiveTradingPage() {
                              </Button>
                           </div>
 
-                          {/* Bot Visualization Engine */}
+                          {/* Bot Visualization Engine - Professional Chart Layout */}
                           <div className="w-full space-y-2">
                              <div className="flex justify-between items-center px-1">
                                <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                 <BarChart4 className="w-3 h-3" /> Performance Trend ({pos.timeframe || '1h'})
+                                 <BarChart4 className="w-3 h-3 text-primary" /> {pos.instrumentId} Performance Trend ({pos.timeframe || '1h'})
                                </span>
-                               <span className="text-[9px] text-muted-foreground font-mono">
-                                 Price: ${sim.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                               <span className="text-[10px] font-mono text-primary font-bold">
+                                 Current: ${sim.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
                                </span>
                              </div>
-                             <div className="w-full h-32 bg-black/20 rounded-lg border border-white/5 overflow-hidden">
+                             <div className="w-full h-48 bg-black/40 rounded-lg border border-white/5 overflow-hidden p-2">
                                <ResponsiveContainer width="100%" height="100%">
-                                  <AreaChart data={sim.chart}>
+                                  <AreaChart data={sim.chart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                       <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.3}/>
+                                        <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.4}/>
                                         <stop offset="95%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
                                       </linearGradient>
                                     </defs>
-                                    <Tooltip 
-                                      contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', fontSize: '10px' }}
-                                      labelStyle={{ display: 'none' }}
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#2e2e2e" vertical={false} />
+                                    <XAxis 
+                                      dataKey="t" 
+                                      hide={false} 
+                                      axisLine={false} 
+                                      tickLine={false} 
+                                      tick={{ fontSize: 9, fill: '#666' }} 
+                                      label={{ value: `Periods (${pos.timeframe || '1h'})`, position: 'insideBottomRight', offset: -5, fontSize: 8, fill: '#444' }}
                                     />
-                                    <YAxis domain={['auto', 'auto']} hide />
-                                    <XAxis hide />
+                                    <YAxis 
+                                      domain={['auto', 'auto']} 
+                                      axisLine={false} 
+                                      tickLine={false} 
+                                      tick={{ fontSize: 9, fill: '#666' }} 
+                                      orientation="right"
+                                    />
+                                    <Tooltip 
+                                      contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', borderRadius: '8px', fontSize: '10px' }}
+                                      itemStyle={{ color: sim.pnl >= 0 ? '#38D94F' : '#F03C3C' }}
+                                      labelStyle={{ color: '#888', marginBottom: '4px' }}
+                                      formatter={(value: number) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 'Price']}
+                                    />
                                     <Area 
                                       type="monotone" 
                                       dataKey="val" 
