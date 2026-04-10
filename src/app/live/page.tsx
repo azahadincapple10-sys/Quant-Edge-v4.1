@@ -402,8 +402,8 @@ export default function LiveTradingPage() {
                   {persistentPositions.map(pos => {
                     const sim = livePrices[pos.id] || { price: pos.entryPrice, pnl: 0, chart: [] }
                     return (
-                      <div key={pos.id} className="p-6 flex flex-col md:flex-row gap-6 hover:bg-white/[0.02] transition-all">
-                        <div className="flex-1 space-y-4">
+                      <div key={pos.id} className="p-6 flex flex-col gap-6 hover:bg-white/[0.02] transition-all">
+                        <div className="w-full space-y-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className={`p-2 rounded-lg ${pos.side === 'LONG' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
@@ -444,30 +444,31 @@ export default function LiveTradingPage() {
                                View Server Logs
                              </Button>
                           </div>
-                        </div>
 
-                        <div className="w-full md:w-64 h-32 bg-black/20 rounded-lg border border-white/5 overflow-hidden">
-                           <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={sim.chart}>
-                                <defs>
-                                  <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
-                                  </linearGradient>
-                                </defs>
-                                <YAxis domain={['auto', 'auto']} hide />
-                                <XAxis hide />
-                                <Area 
-                                  type="monotone" 
-                                  dataKey="val" 
-                                  stroke={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} 
-                                  fillOpacity={1} 
-                                  fill={`url(#color-${pos.id})`} 
-                                  strokeWidth={2}
-                                  isAnimationActive={false}
-                                />
-                              </AreaChart>
-                           </ResponsiveContainer>
+                          {/* Stretched Performance Visualization */}
+                          <div className="w-full h-32 bg-black/20 rounded-lg border border-white/5 overflow-hidden">
+                             <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={sim.chart}>
+                                  <defs>
+                                    <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.3}/>
+                                      <stop offset="95%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0}/>
+                                    </linearGradient>
+                                  </defs>
+                                  <YAxis domain={['auto', 'auto']} hide />
+                                  <XAxis hide />
+                                  <Area 
+                                    type="monotone" 
+                                    dataKey="val" 
+                                    stroke={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} 
+                                    fillOpacity={1} 
+                                    fill={`url(#color-${pos.id})`} 
+                                    strokeWidth={2}
+                                    isAnimationActive={false}
+                                  />
+                                </AreaChart>
+                             </ResponsiveContainer>
+                          </div>
                         </div>
                       </div>
                     )
