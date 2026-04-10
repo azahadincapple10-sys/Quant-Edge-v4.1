@@ -1,13 +1,14 @@
 
 "use client"
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger 
@@ -16,12 +17,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Play, Activity, Zap, ShieldCheck, 
   ArrowUpRight, ArrowDownRight, RefreshCw,
-  Terminal, StopCircle, Settings2, AlertTriangle,
-  Loader2, Plus, Globe, Trophy, ShieldAlert,
-  ArrowRight, Landmark, Lock, Calculator, Info
+  Terminal, StopCircle, AlertTriangle,
+  Loader2, Trophy, ShieldAlert,
+  Lock, Calculator, Info
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useUser, useCollection } from '@/firebase'
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
 import { collection, query, orderBy } from 'firebase/firestore'
 import { INITIAL_MARKET_DATA } from '../screener/page'
 
@@ -49,8 +50,8 @@ export default function LiveTradingPage() {
   const [logs, setLogs] = useState<string[]>([])
   const [equity, setEquity] = useState(50000.00)
   const [hwm, setHwm] = useState(50000.00) // High Water Mark
-  const [dailyStartingEquity, setDailyStartingEquity] = useState(50000.00)
-  const [tradingDays, setTradingDays] = useState(1)
+  const [dailyStartingEquity] = useState(50000.00)
+  const [tradingDays] = useState(1)
   const [isAccountSuspended, setIsAccountSuspended] = useState(false)
   
   // Risk Calculator State
@@ -74,7 +75,7 @@ export default function LiveTradingPage() {
   const PROFIT_TARGET_PHASE1 = 0.10 // 10%
   const INITIAL_BALANCE = 50000.00
 
-  const strategiesQuery = useMemo(() => {
+  const strategiesQuery = useMemoFirebase(() => {
     if (!db || !user) return null
     return query(
       collection(db, 'users', user.uid, 'strategies'),
@@ -171,7 +172,7 @@ export default function LiveTradingPage() {
     setTimeout(() => {
       setIsLive(true)
       setIsDeploying(false)
-      const stratName = savedStrategies.find(s => s.id === config.strategy)?.name || "Bot"
+      const stratName = savedStrategies?.find(s => s.id === config.strategy)?.name || "Bot"
       const startPrice = INITIAL_MARKET_DATA.find(i => i.symbol === config.symbol)?.price || 64000
       
       setActiveTrades([
@@ -231,7 +232,7 @@ export default function LiveTradingPage() {
                     <Select value={config.strategy} onValueChange={(v) => setConfig({...config, strategy: v})}>
                       <SelectTrigger className="col-span-3"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        {savedStrategies.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        {savedStrategies?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

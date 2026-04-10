@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,11 +11,11 @@ import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
-  History, Calendar, Coins, TrendingUp, AlertCircle, 
-  BarChart4, FileText, Settings2, PlayCircle, Loader2,
+  History, Coins, TrendingUp, 
+  FileText, PlayCircle, Loader2,
   CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight
 } from "lucide-react"
-import { useFirestore, useUser, useCollection } from '@/firebase'
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
 import { collection, query, orderBy } from 'firebase/firestore'
 
 interface Trade {
@@ -46,7 +46,7 @@ export default function BacktestPage() {
   const logEndRef = useRef<HTMLDivElement>(null)
 
   // Fetch user strategies
-  const strategiesQuery = useMemo(() => {
+  const strategiesQuery = useMemoFirebase(() => {
     if (!db || !user) return null
     return query(
       collection(db, 'users', user.uid, 'strategies'),
@@ -71,7 +71,7 @@ export default function BacktestPage() {
     setTrades([])
     setResults(null)
 
-    const stratObj = savedStrategies.find(s => s.id === selectedStrategy)
+    const stratObj = savedStrategies?.find(s => s.id === selectedStrategy)
     const stratName = stratObj?.name || "Strategy"
 
     const steps = [
@@ -139,10 +139,10 @@ export default function BacktestPage() {
                   <SelectValue placeholder="Select a strategy" />
                 </SelectTrigger>
                 <SelectContent>
-                  {savedStrategies.map(strat => (
+                  {savedStrategies?.map(strat => (
                     <SelectItem key={strat.id} value={strat.id}>{strat.name}</SelectItem>
                   ))}
-                  {savedStrategies.length === 0 && <SelectItem value="none" disabled>No saved strategies</SelectItem>}
+                  {(!savedStrategies || savedStrategies.length === 0) && <SelectItem value="none" disabled>No saved strategies</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
