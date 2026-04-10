@@ -11,7 +11,8 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { 
   User, Shield, Bell, LogOut, Key, 
-  Save, AlertTriangle, Globe
+  Save, AlertTriangle, Globe, Trophy,
+  ShieldCheck, ShieldAlert
 } from "lucide-react"
 import { useAuth, useUser } from "@/firebase"
 import { signOut } from "firebase/auth"
@@ -25,9 +26,15 @@ export default function SettingsPage() {
   const { toast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
 
-  // Pre-filled with user provided keys for verification
+  // API Keys
   const [alpacaKey, setAlpacaKey] = useState("PKP5PYAIFV6P3TFZ56D5S5F5RD")
   const [alpacaSecret, setAlpacaSecret] = useState("25yLTf393nHQwBEwJEatF4dMLktwRZbqr8QnuhvNHesR")
+
+  // Prop Firm Settings
+  const [propFirmMode, setPropFirmMode] = useState(true)
+  const [maxDailyLoss, setMaxDailyLoss] = useState("5")
+  const [maxDrawdown, setMaxDrawdown] = useState("10")
+  const [profitTarget, setProfitTarget] = useState("10")
 
   const handleLogout = async () => {
     try {
@@ -52,7 +59,7 @@ export default function SettingsPage() {
       setIsSaving(false)
       toast({
         title: "Settings updated",
-        description: "API Credentials and preferences have been updated."
+        description: "Prop Firm rules and API Credentials have been updated."
       })
     }, 1000)
   }
@@ -64,9 +71,14 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
           <p className="text-muted-foreground">Manage your account, API integrations, and trading preferences.</p>
         </div>
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-          {isSaving ? "Saving..." : "Save Changes"} <Save className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-2">
+           <Button variant="outline" className="gap-2" onClick={() => router.push('/live')}>
+             <ShieldCheck className="w-4 h-4" /> View Live Rules
+           </Button>
+           <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+            {isSaving ? "Saving..." : "Save Changes"} <Save className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -99,6 +111,39 @@ export default function SettingsPage() {
                 <LogOut className="w-4 h-4" /> Sign Out
               </Button>
             </CardFooter>
+          </Card>
+
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-primary" /> Prop Firm Evaluation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">Prop Firm Mode</div>
+                  <div className="text-xs text-muted-foreground">Enforce strict evaluation rules.</div>
+                </div>
+                <Switch checked={propFirmMode} onCheckedChange={setPropFirmMode} />
+              </div>
+              {propFirmMode && (
+                <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2">
+                   <div className="space-y-2">
+                     <Label className="text-xs">Profit Target (%)</Label>
+                     <Input type="number" value={profitTarget} onChange={(e) => setProfitTarget(e.target.value)} />
+                   </div>
+                   <div className="space-y-2">
+                     <Label className="text-xs">Max Daily Loss (%)</Label>
+                     <Input type="number" value={maxDailyLoss} onChange={(e) => setMaxDailyLoss(e.target.value)} />
+                   </div>
+                   <div className="space-y-2">
+                     <Label className="text-xs">Max Total Drawdown (%)</Label>
+                     <Input type="number" value={maxDrawdown} onChange={(e) => setMaxDrawdown(e.target.value)} />
+                   </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           <Card className="bg-destructive/5 border-destructive/20">
@@ -178,19 +223,20 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" /> Risk Management
+                <Shield className="w-5 h-5 text-primary" /> Capital Protection
               </CardTitle>
-              <CardDescription>Default safety limits for all active strategies.</CardDescription>
+              <CardDescription>Hard-coded safety limits to protect your principal capital.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Max Daily Loss ($)</Label>
-                  <Input type="number" defaultValue="5000" />
+                  <Label>Safety Buffer ($)</Label>
+                  <Input type="number" defaultValue="2000" />
+                  <p className="text-[10px] text-muted-foreground">Keep this amount untouched by strategies.</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Max Position Size (%)</Label>
-                  <Input type="number" defaultValue="10" />
+                  <Label>Max Open Positions</Label>
+                  <Input type="number" defaultValue="5" />
                 </div>
               </div>
               <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">

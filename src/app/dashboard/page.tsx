@@ -4,11 +4,16 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Wallet, Target, Zap, Activity } from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { 
+  TrendingUp, TrendingDown, Wallet, Target, Zap, 
+  Activity, ShieldCheck, Trophy, ArrowRight 
+} from "lucide-react"
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts'
+import Link from 'next/link'
 
 const performanceData = [
   { time: '09:00', value: 45200 },
@@ -34,13 +39,42 @@ export default function DashboardPage() {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Trading Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, Strategist. Your portfolio is up 2.4% today.</p>
+          <p className="text-muted-foreground">Institutional Terminal active. Compliance status: <span className="text-green-500 font-bold uppercase text-xs">Verified</span></p>
         </div>
         <div className="flex gap-2">
-          <Badge variant="outline" className="px-3 py-1">Market: OPEN</Badge>
+          <Badge variant="outline" className="px-3 py-1 bg-primary/10 border-primary/20 text-primary">PROP FIRM MODE</Badge>
           <Badge variant="secondary" className="px-3 py-1">Paper Trading</Badge>
         </div>
       </div>
+
+      {/* Prop Firm Progress Row */}
+      <Card className="bg-primary/5 border-primary/20 overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-4">
+           <Trophy className="w-12 h-12 text-primary opacity-10" />
+        </div>
+        <CardContent className="pt-6">
+           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="space-y-1 text-center md:text-left">
+                 <h2 className="text-lg font-bold flex items-center gap-2">
+                   <ShieldCheck className="w-5 h-5 text-primary" /> Evaluation Goal: Phase 1
+                 </h2>
+                 <p className="text-xs text-muted-foreground">Current progress toward 10% Profit Target ($5,000).</p>
+              </div>
+              <div className="flex-1 w-full md:max-w-md space-y-2">
+                 <div className="flex justify-between text-xs font-bold uppercase">
+                    <span>Target Progress</span>
+                    <span className="text-primary">64.2%</span>
+                 </div>
+                 <Progress value={64.2} className="h-2" />
+              </div>
+              <Link href="/live">
+                <Badge variant="secondary" className="hover:bg-primary/20 transition-colors cursor-pointer gap-2 py-1.5 px-3">
+                   Execution Console <ArrowRight className="w-3 h-3" />
+                </Badge>
+              </Link>
+           </div>
+        </CardContent>
+      </Card>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -58,37 +92,37 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active Strategies</CardTitle>
-            <Zap className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Daily Drawdown</CardTitle>
+            <Activity className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
+            <div className="text-2xl font-bold">0.82%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              3 Profitable / 1 Drawdown
+              Daily Limit: 5.0%
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Consistency</CardTitle>
             <Target className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">64.2%</div>
+            <div className="text-2xl font-bold">92.4%</div>
             <div className="w-full bg-muted rounded-full h-1.5 mt-3">
-              <div className="bg-primary h-1.5 rounded-full" style={{ width: '64.2%' }}></div>
+              <div className="bg-primary h-1.5 rounded-full" style={{ width: '92.4%' }}></div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Daily Orders</CardTitle>
-            <Activity className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">HWM Protection</CardTitle>
+            <ShieldCheck className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">142</div>
+            <div className="text-2xl font-bold">$48.1k</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Avg Fill Time: 12ms
+              High Water Mark
             </p>
           </CardContent>
         </Card>
