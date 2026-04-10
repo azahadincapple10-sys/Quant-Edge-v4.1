@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * QuantEdge Security Rules Philosophy
+     * 
+     * Core Philosophy: 
+     * This ruleset enforces a strict user-ownership model combined with isolated public data structures. 
+     * We prioritize Authorization Independence by ensuring that all documents contain the necessary 
+     * metadata (like userId) to make local authorization decisions without expensive parent lookups.
+     * 
+     * Data Structure:
+     * 1. Public Data: /instruments and /instruments/{instrumentId}/candles are readable by any 
+     *    authenticated user but restricted to administrative writes.
+     * 2. User Data: Everything else is nested under /users/{userId}. Access is strictly 
+     *    scoped to the authenticated user matching the {userId} wildcard.
+     * 3. Administrative Access: Role-based access is managed via the /roles_admin collection.
+     * 
+     * Key Security Decisions:
+     * - Prototyping Mode: Rules enforce "Who" can access data, but do not restrict the "What" 
+     *   (schema) beyond critical relational links (userId/id).
+     * - List Integrity: Queryable permissions are enforced by path scoping. Users can only list 
+     *   collections within their own /users/{userId} tree.
+     * - State Changes: All updates and deletes require existence checks to prevent orphaned operations.
+     */
+
+    // --- Helper Functions ---
+
+    /** Checks if the user is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** Checks if the authenticated user's UID matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** Checks if the user is an owner and the document exists for updates/deletes. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /** Checks if the user has a record in the global admin collection. */
+    function isGlobalAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // --- Rules ---
+
+    /**
+     * @description Rules for global admin roles used for DBAC.
+     * @path /roles_admin/{userId}
+     * @allow Read access for the user themselves or other admins.
+     * @deny Writes for anyone except through backend/manual intervention.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isOwner(userId) || isGlobalAdmin();
+      allow list: if isGlobalAdmin();
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description User Profile management. Users can only manage their own profile.
+     * @path /users/{userId}
+     * @allow (create) if auth.uid matches the document ID.
+     * @deny (create) if auth.uid does not match the document ID.
+     * @principle Enforces path-based identity and self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isGlobalAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description User-owned subcollections (Watchlists, Strategies, Backtests, etc.).
+       * @path /users/{userId}/{collectionName}/{docId}
+       * @allow (list) if the user is the path owner.
+       * @deny (list) if a user tries to list another user's collection.
+       * @principle Hierarchical segregation ensuring users only access their own data tree.
+       */
+      match /{allSubcollections=**} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Financial instrument definitions available to all users.
+     * @path /instruments/{instrumentId}
+     * @allow (get) for any signed-in user.
+     * @deny (update) for non-admin users.
+     * @principle Public read-only access for core business entities.
+     */
+    match /instruments/{instrumentId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isGlobalAdmin();
+
+      /**
+       * @description Historical candle data for instruments.
+       * @path /instruments/{instrumentId}/candles/{candleId}
+       * @allow (list) for signed-in users viewing market data.
+       * @deny (delete) for standard users.
+       * @principle Public read-only access for sub-resource market data.
+       */
+      match /candles/{candleId} {
+        allow get, list: if isSignedIn();
+        allow create, update, delete: if isGlobalAdmin();
+      }
+    }
+
+    // --- Specific Scoped Matches for Internal Consistency ---
+
+    /**
+     * @description Specific rule for Trading Accounts to protect API references.
+     * @path /users/{userId}/tradingAccounts/{accountId}
+     * @allow (create) if userId matches the path.
+     * @deny (update) if userId is being changed.
+     */
+    match /users/{userId}/tradingAccounts/{accountId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Deeply nested trading data (Orders, Positions, Trades).
+       * @path /users/{userId}/tradingAccounts/{accountId}/{type}/{id}
+       * @principle Authorization Independence: Despite nesting, we verify the path userId.
+       */
+      match /orders/{orderId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.tradingAccountId == accountId;
+        allow update: if isExistingOwner(userId) && request.resource.data.tradingAccountId == resource.data.tradingAccountId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      match /positions/{positionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.tradingAccountId == accountId;
+        allow update: if isExistingOwner(userId) && request.resource.data.tradingAccountId == resource.data.tradingAccountId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      match /trades/{tradeId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.tradingAccountId == accountId;
+        allow update: if isExistingOwner(userId) && request.resource.data.tradingAccountId == resource.data.tradingAccountId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}

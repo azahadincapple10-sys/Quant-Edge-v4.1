@@ -1,50 +1,1241 @@
-
 {
   "entities": {
-    "Strategy": {
-      "title": "Strategy",
-      "description": "An algorithmic trading strategy defined in Python for the Jesse framework.",
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
       "type": "object",
+      "description": "Represents a user's profile information within the QuantEdge application.",
       "properties": {
-        "name": {
+        "id": {
           "type": "string",
-          "description": "The name of the strategy."
+          "description": "Unique identifier for the UserProfile entity."
         },
-        "code": {
+        "email": {
           "type": "string",
-          "description": "The Python code implementation of the strategy."
+          "description": "The user's email address.",
+          "format": "email"
         },
-        "description": {
+        "username": {
           "type": "string",
-          "description": "A brief description of what the strategy does."
+          "description": "The user's chosen username."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user profile was created.",
+          "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "format": "date-time",
-          "description": "The last time the strategy was modified."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who owns this strategy."
+          "description": "Timestamp when the user profile was last updated.",
+          "format": "date-time"
         }
       },
       "required": [
+        "id",
+        "email",
+        "username",
+        "createdAt"
+      ]
+    },
+    "Instrument": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Instrument",
+      "type": "object",
+      "description": "Represents a financial instrument that can be traded or analyzed.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Instrument entity, typically its symbol (e.g., 'AAPL', 'BTCUSD')."
+        },
+        "symbol": {
+          "type": "string",
+          "description": "The trading symbol of the instrument (e.g., 'AAPL')."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the instrument (e.g., 'Apple Inc.')."
+        },
+        "market": {
+          "type": "string",
+          "description": "The market segment the instrument belongs to (e.g., 'equity', 'crypto', 'forex', 'commodity')."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency in which the instrument is denominated (e.g., 'USD')."
+        },
+        "exchange": {
+          "type": "string",
+          "description": "The exchange where the instrument is primarily traded (e.g., 'NASDAQ', 'Binance')."
+        }
+      },
+      "required": [
+        "id",
+        "symbol",
+        "name",
+        "market",
+        "currency",
+        "exchange"
+      ]
+    },
+    "Candle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Candle",
+      "type": "object",
+      "description": "Represents a single candlestick data point (OHLCV) for a specific instrument and timeframe.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Candle entity, typically a composite of instrumentId, timestamp, and timeframe."
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Reference to the Instrument this candle belongs to. (Relationship: Instrument 1:N Candle)"
+        },
+        "timeframe": {
+          "type": "string",
+          "description": "The duration of the candle (e.g., '1m', '5m', '1h', '1d')."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The opening timestamp of the candle.",
+          "format": "date-time"
+        },
+        "open": {
+          "type": "number",
+          "description": "The opening price of the candle."
+        },
+        "high": {
+          "type": "number",
+          "description": "The highest price reached during the candle's period."
+        },
+        "low": {
+          "type": "number",
+          "description": "The lowest price reached during the candle's period."
+        },
+        "close": {
+          "type": "number",
+          "description": "The closing price of the candle."
+        },
+        "volume": {
+          "type": "number",
+          "description": "The trading volume during the candle's period."
+        }
+      },
+      "required": [
+        "id",
+        "instrumentId",
+        "timeframe",
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ]
+    },
+    "Watchlist": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Watchlist",
+      "type": "object",
+      "description": "A user-defined collection of financial instruments for monitoring.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Watchlist entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who owns this watchlist. (Relationship: UserProfile 1:N Watchlist)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the watchlist (e.g., 'My Crypto', 'Tech Stocks')."
+        },
+        "instrumentIds": {
+          "type": "array",
+          "description": "An array of Instrument IDs included in this watchlist. (Relationship: Watchlist N:N Instrument)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the watchlist was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the watchlist was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "instrumentIds",
+        "createdAt"
+      ]
+    },
+    "PortfolioSnapshot": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PortfolioSnapshot",
+      "type": "object",
+      "description": "A periodic snapshot of a user's portfolio performance metrics.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the PortfolioSnapshot entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile this snapshot belongs to. (Relationship: UserProfile 1:N PortfolioSnapshot)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The timestamp when the snapshot was recorded.",
+          "format": "date-time"
+        },
+        "totalValue": {
+          "type": "number",
+          "description": "The total monetary value of the portfolio at the time of the snapshot."
+        },
+        "dayPnl": {
+          "type": "number",
+          "description": "Profit and Loss for the day at the time of the snapshot."
+        },
+        "winRate": {
+          "type": "number",
+          "description": "The percentage of winning trades recorded up to this snapshot."
+        },
+        "sharpeRatio": {
+          "type": "number",
+          "description": "The Sharpe ratio of the portfolio's performance up to this snapshot."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "timestamp",
+        "totalValue"
+      ]
+    },
+    "ChartDrawing": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChartDrawing",
+      "type": "object",
+      "description": "User-created drawing annotations on a chart for a specific instrument and timeframe.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ChartDrawing entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created this drawing. (Relationship: UserProfile 1:N ChartDrawing)"
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Reference to the Instrument on which the drawing was made. (Relationship: Instrument 1:N ChartDrawing)"
+        },
+        "timeframe": {
+          "type": "string",
+          "description": "The timeframe of the chart where the drawing is displayed (e.g., '1h', '1d')."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of drawing (e.g., 'trend_line', 'horizontal_level', 'rectangle_zone')."
+        },
+        "parameters": {
+          "type": "string",
+          "description": "A JSON string containing drawing-specific parameters like coordinates, colors, and text."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the drawing was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the drawing was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "instrumentId",
+        "timeframe",
+        "type",
+        "parameters",
+        "createdAt"
+      ]
+    },
+    "ScreenerPreset": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ScreenerPreset",
+      "type": "object",
+      "description": "A saved configuration of filters and sorting criteria for the market screener.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ScreenerPreset entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who owns this screener preset. (Relationship: UserProfile 1:N ScreenerPreset)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the saved screener preset."
+        },
+        "filters": {
+          "type": "string",
+          "description": "A JSON string array of filter objects, each defining a field, operator, and value (e.g., '[{\"field\":\"rsi\",\"operator\":\"gt\",\"value\":70}]')."
+        },
+        "sortField": {
+          "type": "string",
+          "description": "The field by which the screener results are sorted (e.g., 'changePct', 'volume')."
+        },
+        "sortDir": {
+          "type": "string",
+          "description": "The sorting direction ('asc' for ascending, 'desc' for descending)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the preset was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the preset was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "filters",
+        "sortField",
+        "sortDir",
+        "createdAt"
+      ]
+    },
+    "Strategy": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Strategy",
+      "type": "object",
+      "description": "An algorithmic trading strategy defined by the user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Strategy entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created this strategy. (Relationship: UserProfile 1:N Strategy)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the trading strategy."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the strategy's logic or purpose."
+        },
+        "code": {
+          "type": "string",
+          "description": "The Python-like code implementing the trading strategy."
+        },
+        "language": {
+          "type": "string",
+          "description": "The programming language or syntax used for the strategy code (e.g., 'python', 'jesse_dsl')."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the strategy was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the strategy was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
         "name",
         "code",
-        "userId"
+        "language",
+        "createdAt"
+      ]
+    },
+    "Backtest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Backtest",
+      "type": "object",
+      "description": "A record of a backtesting run for an algorithmic trading strategy.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Backtest entity."
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "Reference to the Strategy that was backtested. (Relationship: Strategy 1:N Backtest)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who initiated the backtest. (Relationship: UserProfile 1:N Backtest)"
+        },
+        "instrumentIds": {
+          "type": "array",
+          "description": "An array of Instrument IDs on which the strategy was backtested. (Relationship: Backtest N:N Instrument)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeframe": {
+          "type": "string",
+          "description": "The primary timeframe used for the backtest (e.g., '1h', '1d')."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date of the backtesting period.",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date of the backtesting period.",
+          "format": "date"
+        },
+        "initialCapital": {
+          "type": "number",
+          "description": "The starting capital used for the backtest."
+        },
+        "parameters": {
+          "type": "string",
+          "description": "A JSON string of hyperparameters used for this specific backtest run."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the backtest (e.g., 'pending', 'running', 'completed', 'failed')."
+        },
+        "metrics": {
+          "type": "string",
+          "description": "A JSON string containing detailed performance metrics of the backtest (e.g., 'sharpe_ratio', 'total_pnl', 'max_drawdown')."
+        },
+        "debugLogsRef": {
+          "type": "string",
+          "description": "A reference (e.g., URI to storage) for detailed debug logs generated during the backtest."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the backtest was initiated.",
+          "format": "date-time"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "Timestamp when the backtest was completed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "strategyId",
+        "userId",
+        "instrumentIds",
+        "timeframe",
+        "startDate",
+        "endDate",
+        "initialCapital",
+        "parameters",
+        "status",
+        "createdAt"
+      ]
+    },
+    "TradingAccount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TradingAccount",
+      "type": "object",
+      "description": "Represents a user's connection to an external trading exchange, either live or paper.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TradingAccount entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who owns this trading account. (Relationship: UserProfile 1:N TradingAccount)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-defined name for the trading account (e.g., 'My Binance Spot', 'Paper Trading')."
+        },
+        "exchange": {
+          "type": "string",
+          "description": "The name of the external exchange (e.g., 'Binance', 'Alpaca')."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of account ('live' for real money, 'paper' for simulation)."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current connection status of the account (e.g., 'connected', 'disconnected', 'error')."
+        },
+        "apiKeyRef": {
+          "type": "string",
+          "description": "A secure, non-sensitive reference or ID to where the actual API key information is stored externally (e.g., a key vault ID). Actual API keys are NOT stored here."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the trading account connection was configured.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the trading account configuration was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "exchange",
+        "type",
+        "status",
+        "apiKeyRef",
+        "createdAt"
+      ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "A single buy or sell order placed on a trading account.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Order entity."
+        },
+        "tradingAccountId": {
+          "type": "string",
+          "description": "Reference to the TradingAccount where this order was placed. (Relationship: TradingAccount 1:N Order)"
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Reference to the Instrument for which this order is placed. (Relationship: Instrument 1:N Order)"
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "Optional reference to the Strategy that placed this order, if applicable. (Relationship: Strategy 1:N Order)"
+        },
+        "exchangeOrderId": {
+          "type": "string",
+          "description": "The order ID assigned by the external trading exchange."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of order (e.g., 'market', 'limit', 'stop_loss', 'take_profit')."
+        },
+        "side": {
+          "type": "string",
+          "description": "The direction of the order ('buy' or 'sell')."
+        },
+        "price": {
+          "type": "number",
+          "description": "The limit or stop price for the order (N/A for market orders)."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The total quantity of the instrument requested in the order."
+        },
+        "filledQuantity": {
+          "type": "number",
+          "description": "The quantity of the instrument that has been filled so far."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the order (e.g., 'pending', 'open', 'filled', 'partial_fill', 'cancelled', 'rejected')."
+        },
+        "placedAt": {
+          "type": "string",
+          "description": "Timestamp when the order was placed.",
+          "format": "date-time"
+        },
+        "filledAt": {
+          "type": "string",
+          "description": "Timestamp when the order was fully filled.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "tradingAccountId",
+        "instrumentId",
+        "exchangeOrderId",
+        "type",
+        "side",
+        "quantity",
+        "filledQuantity",
+        "status",
+        "placedAt"
+      ]
+    },
+    "Position": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Position",
+      "type": "object",
+      "description": "An open trading position (long or short) for a specific instrument on a trading account.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Position entity."
+        },
+        "tradingAccountId": {
+          "type": "string",
+          "description": "Reference to the TradingAccount where this position exists. (Relationship: TradingAccount 1:N Position)"
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Reference to the Instrument this position is for. (Relationship: Instrument 1:N Position)"
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "Optional reference to the Strategy that opened this position. (Relationship: Strategy 1:N Position)"
+        },
+        "entryPrice": {
+          "type": "number",
+          "description": "The average entry price of the position."
+        },
+        "entryTime": {
+          "type": "string",
+          "description": "Timestamp when the position was first opened.",
+          "format": "date-time"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The current quantity of the instrument held in the position."
+        },
+        "side": {
+          "type": "string",
+          "description": "The direction of the position ('long' or 'short')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the position ('open' or 'closed')."
+        },
+        "currentPrice": {
+          "type": "number",
+          "description": "The current market price of the instrument."
+        },
+        "unrealizedPnl": {
+          "type": "number",
+          "description": "The unrealized Profit and Loss for the open position."
+        },
+        "realizedPnl": {
+          "type": "number",
+          "description": "The realized Profit and Loss once the position is closed."
+        },
+        "closeTime": {
+          "type": "string",
+          "description": "Timestamp when the position was closed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "tradingAccountId",
+        "instrumentId",
+        "entryPrice",
+        "entryTime",
+        "quantity",
+        "side",
+        "status"
+      ]
+    },
+    "Trade": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Trade",
+      "type": "object",
+      "description": "A record of an individual execution or fill that constitutes part of an order or position.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Trade entity."
+        },
+        "tradingAccountId": {
+          "type": "string",
+          "description": "Reference to the TradingAccount where this trade occurred. (Relationship: TradingAccount 1:N Trade)"
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Reference to the Instrument involved in this trade. (Relationship: Instrument 1:N Trade)"
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Reference to the Order this trade is part of. (Relationship: Order 1:N Trade)"
+        },
+        "positionId": {
+          "type": "string",
+          "description": "Optional reference to the Position this trade contributed to opening or closing. (Relationship: Position 1:N Trade)"
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "Optional reference to the Strategy that initiated this trade. (Relationship: Strategy 1:N Trade)"
+        },
+        "exchangeTradeId": {
+          "type": "string",
+          "description": "The trade ID assigned by the external trading exchange for this specific execution."
+        },
+        "side": {
+          "type": "string",
+          "description": "The side of the trade ('buy' or 'sell')."
+        },
+        "executedPrice": {
+          "type": "number",
+          "description": "The price at which this specific trade was executed."
+        },
+        "executedQuantity": {
+          "type": "number",
+          "description": "The quantity of the instrument executed in this trade."
+        },
+        "commission": {
+          "type": "number",
+          "description": "The commission paid for this specific trade."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp when the trade was executed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "tradingAccountId",
+        "instrumentId",
+        "orderId",
+        "exchangeTradeId",
+        "side",
+        "executedPrice",
+        "executedQuantity",
+        "commission",
+        "timestamp"
+      ]
+    },
+    "Alert": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Alert",
+      "type": "object",
+      "description": "A user-defined condition that triggers a notification when met.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Alert entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who created this alert. (Relationship: UserProfile 1:N Alert)"
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the alert."
+        },
+        "instrumentId": {
+          "type": "string",
+          "description": "Optional reference to a specific Instrument the alert is tied to. (Relationship: Instrument 1:N Alert)"
+        },
+        "condition": {
+          "type": "string",
+          "description": "A JSON string defining the criteria for triggering the alert (e.g., price crosses X, RSI > 70)."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of alert (e.g., 'price_level', 'indicator_threshold', 'strategy_event')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the alert ('active', 'triggered', 'inactive')."
+        },
+        "notificationChannels": {
+          "type": "array",
+          "description": "An array of channels through which the user wishes to be notified (e.g., 'telegram', 'email', 'discord').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "triggeredAt": {
+          "type": "string",
+          "description": "Timestamp when the alert was last triggered.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the alert was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the alert was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "condition",
+        "type",
+        "status",
+        "notificationChannels",
+        "createdAt"
+      ]
+    },
+    "OptimizationRun": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OptimizationRun",
+      "type": "object",
+      "description": "A record of a strategy parameter optimization run, potentially AI-assisted.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the OptimizationRun entity."
+        },
+        "strategyId": {
+          "type": "string",
+          "description": "Reference to the Strategy that was optimized. (Relationship: Strategy 1:N OptimizationRun)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who initiated the optimization. (Relationship: UserProfile 1:N OptimizationRun)"
+        },
+        "parametersToOptimize": {
+          "type": "string",
+          "description": "A JSON string defining the strategy hyperparameters to be optimized and their ranges."
+        },
+        "objective": {
+          "type": "string",
+          "description": "The optimization objective (e.g., 'maximizeSharpe', 'minimizeDrawdown', 'maximizeProfitFactor')."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the optimization run (e.g., 'pending', 'running', 'completed', 'failed')."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "Timestamp when the optimization run started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "Timestamp when the optimization run completed.",
+          "format": "date-time"
+        },
+        "results": {
+          "type": "string",
+          "description": "A JSON string containing the optimization results, including best parameters found and corresponding performance metrics."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the optimization run was initiated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "strategyId",
+        "userId",
+        "parametersToOptimize",
+        "objective",
+        "status",
+        "startTime",
+        "createdAt"
+      ]
+    },
+    "AIInsight": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AIInsight",
+      "type": "object",
+      "description": "Stores AI-generated insights, recommendations, or strategy suggestions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AIInsight entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who received this insight. (Relationship: UserProfile 1:N AIInsight)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of AI insight (e.g., 'strategy_suggestion', 'portfolio_recommendation', 'debug_hint')."
+        },
+        "context": {
+          "type": "string",
+          "description": "A JSON string providing context for the insight (e.g., '{\"strategyId\": \"abc\"}', '{\"portfolioId\": \"123\"}')."
+        },
+        "recommendation": {
+          "type": "string",
+          "description": "The AI's generated recommendation or insight, either as plain text or structured JSON string."
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp when the AI insight was generated.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the insight (e.g., 'new', 'reviewed', 'applied', 'dismissed')."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "context",
+        "recommendation",
+        "generatedAt",
+        "status"
       ]
     }
   },
   "auth": {
     "providers": [
-      "google.com",
-      "password"
+      "password",
+      "anonymous"
     ]
   },
   "firestore": {
-    "/users/{userId}/strategies/{strategyId}": {
-      "schema": "#/backend/entities/Strategy",
-      "description": "User created trading strategies"
-    }
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores individual user profiles. Access is restricted to the owning user, identified by the `{userId}` wildcard matching `request.auth.uid`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching `request.auth.uid`."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/instruments/{instrumentId}",
+        "definition": {
+          "entityName": "Instrument",
+          "schema": {
+            "$ref": "#/backend/entities/Instrument"
+          },
+          "description": "Stores publicly available financial instrument definitions. Readable by all authenticated users. Writable by system/admin only.",
+          "params": [
+            {
+              "name": "instrumentId",
+              "description": "The unique identifier for the instrument, typically its symbol (e.g., 'AAPL')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/instruments/{instrumentId}/candles/{candleId}",
+        "definition": {
+          "entityName": "Candle",
+          "schema": {
+            "$ref": "#/backend/entities/Candle"
+          },
+          "description": "Stores historical candlestick data for financial instruments. Publicly readable by all authenticated users. Writable by system/admin only.",
+          "params": [
+            {
+              "name": "instrumentId",
+              "description": "The unique identifier of the parent instrument."
+            },
+            {
+              "name": "candleId",
+              "description": "A composite ID for the candle, typically combining instrument, timeframe, and timestamp."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/watchlists/{watchlistId}",
+        "definition": {
+          "entityName": "Watchlist",
+          "schema": {
+            "$ref": "#/backend/entities/Watchlist"
+          },
+          "description": "Stores user-specific watchlists. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns this watchlist."
+            },
+            {
+              "name": "watchlistId",
+              "description": "The unique ID of the watchlist."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/portfolioSnapshots/{snapshotId}",
+        "definition": {
+          "entityName": "PortfolioSnapshot",
+          "schema": {
+            "$ref": "#/backend/entities/PortfolioSnapshot"
+          },
+          "description": "Stores periodic portfolio performance snapshots for a user. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns this portfolio snapshot."
+            },
+            {
+              "name": "snapshotId",
+              "description": "The unique ID of the portfolio snapshot."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chartDrawings/{drawingId}",
+        "definition": {
+          "entityName": "ChartDrawing",
+          "schema": {
+            "$ref": "#/backend/entities/ChartDrawing"
+          },
+          "description": "Stores user-created chart drawing annotations. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who created this drawing."
+            },
+            {
+              "name": "drawingId",
+              "description": "The unique ID of the chart drawing."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/screenerPresets/{presetId}",
+        "definition": {
+          "entityName": "ScreenerPreset",
+          "schema": {
+            "$ref": "#/backend/entities/ScreenerPreset"
+          },
+          "description": "Stores user-defined screener filter presets. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns this screener preset."
+            },
+            {
+              "name": "presetId",
+              "description": "The unique ID of the screener preset."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/strategies/{strategyId}",
+        "definition": {
+          "entityName": "Strategy",
+          "schema": {
+            "$ref": "#/backend/entities/Strategy"
+          },
+          "description": "Stores user-defined algorithmic trading strategies. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who created this strategy."
+            },
+            {
+              "name": "strategyId",
+              "description": "The unique ID of the strategy."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/backtests/{backtestId}",
+        "definition": {
+          "entityName": "Backtest",
+          "schema": {
+            "$ref": "#/backend/entities/Backtest"
+          },
+          "description": "Stores records of backtesting runs for user strategies. Includes denormalized `userId` for authorization independence, allowing direct `request.auth.uid == resource.data.userId` checks. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who initiated this backtest."
+            },
+            {
+              "name": "backtestId",
+              "description": "The unique ID of the backtest run."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tradingAccounts/{accountId}",
+        "definition": {
+          "entityName": "TradingAccount",
+          "schema": {
+            "$ref": "#/backend/entities/TradingAccount"
+          },
+          "description": "Stores configurations for a user's external trading accounts. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns this trading account."
+            },
+            {
+              "name": "accountId",
+              "description": "The unique ID of the trading account."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tradingAccounts/{accountId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores individual trading orders placed via a user's trading account. Includes denormalized `userId` for authorization independence, enabling direct `request.auth.uid == resource.data.userId` checks without `get()` calls. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns the parent trading account."
+            },
+            {
+              "name": "accountId",
+              "description": "The unique ID of the trading account this order belongs to."
+            },
+            {
+              "name": "orderId",
+              "description": "The unique ID of the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tradingAccounts/{accountId}/positions/{positionId}",
+        "definition": {
+          "entityName": "Position",
+          "schema": {
+            "$ref": "#/backend/entities/Position"
+          },
+          "description": "Stores open trading positions for a user's trading account. Includes denormalized `userId` for authorization independence, enabling direct `request.auth.uid == resource.data.userId` checks without `get()` calls. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns the parent trading account."
+            },
+            {
+              "name": "accountId",
+              "description": "The unique ID of the trading account this position belongs to."
+            },
+            {
+              "name": "positionId",
+              "description": "The unique ID of the position."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tradingAccounts/{accountId}/trades/{tradeId}",
+        "definition": {
+          "entityName": "Trade",
+          "schema": {
+            "$ref": "#/backend/entities/Trade"
+          },
+          "description": "Stores records of individual trade executions for a user's trading account. Includes denormalized `userId` for authorization independence, enabling direct `request.auth.uid == resource.data.userId` checks without `get()` calls. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who owns the parent trading account."
+            },
+            {
+              "name": "accountId",
+              "description": "The unique ID of the trading account this trade belongs to."
+            },
+            {
+              "name": "tradeId",
+              "description": "The unique ID of the trade."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/alerts/{alertId}",
+        "definition": {
+          "entityName": "Alert",
+          "schema": {
+            "$ref": "#/backend/entities/Alert"
+          },
+          "description": "Stores user-defined real-time alerts. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who created this alert."
+            },
+            {
+              "name": "alertId",
+              "description": "The unique ID of the alert."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/optimizationRuns/{runId}",
+        "definition": {
+          "entityName": "OptimizationRun",
+          "schema": {
+            "$ref": "#/backend/entities/OptimizationRun"
+          },
+          "description": "Stores records of strategy parameter optimization runs. Includes denormalized `userId` for authorization independence, allowing direct `request.auth.uid == resource.data.userId` checks. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who initiated this optimization run."
+            },
+            {
+              "name": "runId",
+              "description": "The unique ID of the optimization run."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/aiInsights/{insightId}",
+        "definition": {
+          "entityName": "AIInsight",
+          "schema": {
+            "$ref": "#/backend/entities/AIInsight"
+          },
+          "description": "Stores AI-generated insights and recommendations for a user. Documents include `userId` for authorization independence. Only readable/writable by the owning user (matching `userId` from path with `request.auth.uid`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user who received this AI insight."
+            },
+            {
+              "name": "insightId",
+              "description": "The unique ID of the AI insight."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for QuantEdge is designed with a strong emphasis on Authorization Independence, Structural Segregation, and Query-Able Permissions (QAPs) to ensure security, scalability, and debuggability. This approach directly addresses the mandated core design principles.\n\n**Authorization Independence (CRITICAL):**\nThis design prioritizes eliminating hierarchical authorization dependencies (e.g., `get()` calls in security rules) by denormalizing authorization context. For all user-owned data entities (e.g., Watchlist, Strategy, Backtest, TradingAccount, Alert, AIInsight, PortfolioSnapshot, ChartDrawing, ScreenerPreset), the `userId` is consistently embedded within the document. This allows Firestore security rules to perform direct, atomic checks (e.g., `request.auth.uid == resource.data.userId` or `request.auth.uid == userId` derived from the path wildcard) without needing to fetch or evaluate parent documents. This is particularly crucial for nested subcollections, such as `Order`, `Position`, and `Trade` which reside under `/users/{userId}/tradingAccounts/{accountId}/...`. Despite being nested, each `Order`, `Position`, and `Trade` document explicitly includes the `userId` of the `TradingAccount` owner. This ensures that ownership can be verified by inspecting only the specific document being accessed, making rules simple, robust, and enabling atomic batch operations.\n\n**Structural Segregation & QAPs (Query-Able Permissions):**\nThe structure employs distinct collection patterns based on security posture, directly supporting efficient and secure `list` operations (QAPs):\n1.  **Publicly Accessible Data:** Entities like `Instrument` and their `Candle` data are stored in broadly accessible collections (`/instruments`, `/instruments/{instrumentId}/candles`). These collections allow read access for all authenticated users, simplifying security rules to a basic `allow read: if request.auth != null;`. This enables clients to efficiently list all available instruments and their historical data without any server-side filtering by security rules.\n2.  **Private User-Owned Data:** The majority of entities are stored in user-specific subcollections under a top-level `/users/{userId}` collection (e.g., `/users/{userId}/watchlists/{watchlistId}`, `/users/{userId}/strategies/{strategyId}`). This path-based ownership (`request.auth.uid == userId` from the path wildcard) inherently segregates data. A user can only query their own watchlists, backtests, or strategies because the query path itself (`/users/myUid/watchlists`) restricts access to their data. This design makes `list` operations performant and secure, as Firestore can efficiently return results without needing to apply costly `where` clauses within security rules to filter out unauthorized documents.\n\n**DBAC (Database Access Control):**\nFollowing the mandate for Database Access Control, any global roles (e.g., 'admin') would be managed through dedicated database collections, such as `/roles_admin/{userId}`. The existence of a document at this path for a given `request.auth.uid` would grant administrative privileges, making authorization explicit and debuggable within the database itself.\n\n**Consistent Access Modeling:**\n*   **Path-Based Ownership:** Primarily used for all user-specific resources, offering a clear and consistent pattern for authorization.\n*   **Hierarchical Paths:** Maintained for logically nested entities (e.g., `Order` under `TradingAccount` under `User`) while ensuring critical authorization fields are denormalized at each level to preserve independence.\n*   **Explicit State Modeling:** All entities requiring status tracking (e.g., `Backtest.status`, `Alert.status`) use a single, dedicated `status` field to clearly define their finite state, improving data predictability and simplifying logic.\n\nThis robust architecture ensures that QuantEdge's data layer is secure, performant, and maintainable, minimizing potential complexity in security rules and maximizing query efficiency."
   }
 }
