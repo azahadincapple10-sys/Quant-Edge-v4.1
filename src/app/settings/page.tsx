@@ -12,10 +12,13 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { 
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger 
+} from "@/components/ui/dialog"
+import { 
   User, Shield, Bell, LogOut, Key, 
   Save, AlertTriangle, Trophy,
   ShieldCheck, Landmark, Calculator,
-  Mail, Globe, Clock, CreditCard, Loader2, Coins, Zap
+  Mail, Globe, Clock, CreditCard, Loader2, Coins, Zap, RefreshCcw
 } from "lucide-react"
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase"
 import { signOut } from "firebase/auth"
@@ -32,6 +35,7 @@ export default function SettingsPage() {
   const { toast } = useToast()
   
   const [isSaving, setIsSaving] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
 
   // Profile State
   const profileRef = useMemoFirebase(() => {
@@ -108,6 +112,28 @@ export default function SettingsPage() {
     }, 800)
   }
 
+  const handleResetAccount = () => {
+    if (!db || !user) return
+    setIsResetting(true)
+
+    const resetData = {
+      totalBalance: 100000,
+      vaultBalance: 100000,
+      tradingBalance: 0,
+      updatedAt: serverTimestamp(),
+    }
+
+    setDocumentNonBlocking(doc(db, 'users', user.uid), resetData, { merge: true })
+
+    setTimeout(() => {
+      setIsResetting(false)
+      toast({
+        title: "Account Reset",
+        description: "Balances have been restored to the default $100,000 allocation."
+      })
+    }, 1000)
+  }
+
   return (
     <div className="flex-1 flex flex-col p-6 space-y-6 overflow-auto bg-background">
       <div className="flex justify-between items-center">
@@ -170,9 +196,33 @@ export default function SettingsPage() {
                 </div>
               </div>
               <Separator />
-              <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 border-destructive/20 gap-2" onClick={handleLogout}>
-                <LogOut className="w-4 h-4" /> Sign Out from Terminal
-              </Button>
+              <div className="space-y-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full gap-2 border-orange-500/20 text-orange-500 hover:bg-orange-500/10">
+                      <RefreshCcw className="w-4 h-4" /> Reset Terminal Balances
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border">
+                    <DialogHeader>
+                      <DialogTitle>Confirm Account Reset?</DialogTitle>
+                      <DialogDescription>
+                        This will restore your Vault to $100,000 and clear your Trading balance. Active bots will not be affected, but their funding logic may drift.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="destructive" onClick={handleResetAccount} disabled={isResetting}>
+                        {isResetting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                        Reset to $100,000
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button variant="ghost" className="w-full text-destructive hover:bg-destructive/10 gap-2" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4" /> Sign Out from Terminal
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

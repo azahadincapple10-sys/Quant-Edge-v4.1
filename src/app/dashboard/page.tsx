@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect } from 'react'
@@ -47,11 +48,11 @@ export default function DashboardPage() {
     return doc(db, 'users', user.uid)
   }, [db, user])
 
-  const { data: profile } = useDoc<any>(profileRef)
+  const { data: profile, isLoading } = useDoc<any>(profileRef)
 
-  // Initialize new user with $100,000 if profile doesn't exist or balance is missing
+  // Initialize new user with $100,000 if profile doesn't exist AND loading is finished
   useEffect(() => {
-    if (user && db && !profile) {
+    if (user && db && !isLoading && !profile) {
       const initialProfile = {
         id: user.uid,
         email: user.email,
@@ -66,7 +67,7 @@ export default function DashboardPage() {
       }
       setDocumentNonBlocking(doc(db, 'users', user.uid), initialProfile, { merge: true })
     }
-  }, [user, db, profile])
+  }, [user, db, profile, isLoading])
 
   const seedDemoData = () => {
     if (!db || !user) return;
@@ -103,9 +104,9 @@ export default function DashboardPage() {
   }
 
   const balances = {
-    total: profile?.totalBalance || 100000,
-    vault: profile?.vaultBalance || 100000,
-    trading: profile?.tradingBalance || 0
+    total: profile?.totalBalance ?? (isLoading ? 0 : 100000),
+    vault: profile?.vaultBalance ?? (isLoading ? 0 : 100000),
+    trading: profile?.tradingBalance ?? 0
   }
 
   return (
