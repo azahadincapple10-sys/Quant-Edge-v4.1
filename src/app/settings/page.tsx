@@ -56,6 +56,8 @@ export default function SettingsPage() {
   const [propFirmMode, setPropFirmMode] = useState(true)
   const [accountSize, setAccountSize] = useState("100000")
   const [challengePhase, setChallengePhase] = useState("phase1")
+  const [alpacaKey, setAlpacaKey] = useState("************************")
+  const [alpacaSecret, setAlpacaSecret] = useState("********************************")
 
   // Sync form with Firestore data
   useEffect(() => {
@@ -69,12 +71,15 @@ export default function SettingsPage() {
       setPropFirmMode(profileData.propFirmMode !== undefined ? profileData.propFirmMode : true)
       setAccountSize(profileData.accountSize || "100000")
       setChallengePhase(profileData.challengePhase || "phase1")
+      if (profileData.alpacaKey) setAlpacaKey(profileData.alpacaKey)
+      if (profileData.alpacaSecret) setAlpacaSecret(profileData.alpacaSecret)
     } else if (user) {
         setProfileForm(prev => ({ ...prev, username: user.email?.split('@')[0] || '' }))
     }
   }, [profileData, user])
 
   const handleLogout = async () => {
+    if (!auth) return
     try {
       await signOut(auth)
       router.push('/')
@@ -100,6 +105,8 @@ export default function SettingsPage() {
       propFirmMode,
       accountSize,
       challengePhase,
+      alpacaKey,
+      alpacaSecret,
       id: user.uid,
       email: user.email,
       updatedAt: serverTimestamp(),
@@ -181,7 +188,7 @@ export default function SettingsPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> Email</span>
-                  <span className="font-medium">{user?.email}</span>
+                  <span className="font-medium truncate ml-4">{user?.email}</span>
                 </div>
                 <Separator />
                 <div className="space-y-2 pt-2">
@@ -355,11 +362,21 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-[10px] uppercase text-muted-foreground">Key ID</Label>
-                    <Input type="text" value={alpacaKey} onChange={(e) => setAlpacaKey(e.target.value)} className="h-9 font-mono text-xs" />
+                    <Input 
+                      type="text" 
+                      value={alpacaKey} 
+                      onChange={(e) => setAlpacaKey(e.target.value)} 
+                      className="h-9 font-mono text-xs" 
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] uppercase text-muted-foreground">Secret Key</Label>
-                    <Input type="password" value={alpacaSecret} onChange={(e) => setAlpacaSecret(e.target.value)} className="h-9 font-mono text-xs" />
+                    <Input 
+                      type="password" 
+                      value={alpacaSecret} 
+                      onChange={(e) => setAlpacaSecret(e.target.value)} 
+                      className="h-9 font-mono text-xs" 
+                    />
                   </div>
                 </div>
               </div>
