@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,10 +15,11 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import Link from 'next/link'
-import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase'
-import { doc, serverTimestamp } from 'firebase/firestore'
+import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from '@/firebase'
+import { doc, serverTimestamp, collection, query, where } from 'firebase/firestore'
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { useToast } from '@/hooks/use-toast'
+import { INITIAL_MARKET_DATA } from '../screener/page'
 
 const performanceData = [
   { time: '09:00', value: 45200 },
@@ -43,14 +44,30 @@ export default function DashboardPage() {
   const { user } = useUser()
   const { toast } = useToast()
 
+  // 1. Fetch User Profile
   const profileRef = useMemoFirebase(() => {
     if (!db || !user) return null
     return doc(db, 'users', user.uid)
   }, [db, user])
-
   const { data: profile, isLoading } = useDoc<any>(profileRef)
 
-  // Initialize new user with $100,000 if profile doesn't exist AND loading is finished
+  // 2. Fetch Active Positions for Live Equity
+  const positionsQuery = useMemoFirebase(() => {
+    if (!db || !user) return null
+    return query(collection(db, 'users', user.uid, 'tradingAccounts', 'default', 'positions'), where('status', '==', 'open'))
+  }, [db, user])
+  const { data: positions } = useCollection<any>(positionsQuery)
+
+  // 3. Fetch Trades for Trading Days calculation
+  const tradesQuery = useMemoFirebase(() => {
+    if (!db || !user) return null
+    return collection(db, 'users', user.uid, 'tradingAccounts', 'default', 'trades')
+  }, [db, user])
+  const { data: trades } = useCollection<any>(tradesQuery)
+
+  const [unrealizedPnl, setUnrealizedPnl] = useState(0)
+
+  // Initialize new user with $100,000 if profile doesn't exist
   useEffect(() => {
     if (user && db && !isLoading && !profile) {
       const initialProfile = {
@@ -72,57 +89,71 @@ export default function DashboardPage() {
     }
   }, [user, db, profile, isLoading])
 
-  const seedDemoData = () => {
-    if (!db || !user) return;
-    
-    const strategyId = "golden-cross-demo";
-    const strategyData = {
-      id: strategyId,
-      name: "GoldenCross (EMA 8/21)",
-      code: `class GoldenCross(Strategy):
-    def should_long(self):
-        # go long when the EMA 8 is above the EMA 21
-        short_ema = ta.ema(self.candles, 8)
-        long_ema = ta.ema(self.candles, 21)
-        return short_ema > long_ema
+  // Live PnL Simulation for Dashboard
+  useEffect(() => {
+    if (!positions || positions.length === 0) {
+      setUnrealizedPnl(0)
+      return
+    }
 
-    def go_long(self):
-        entry_price = self.price - 10
-        qty = utils.size_to_qty(self.balance*0.05, entry_price)
-        self.buy = qty, entry_price
-        self.take_profit = qty, entry_price*1.2
-        self.stop_loss = qty, entry_price*0.9`,
-      language: 'python',
-      userId: user.uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
+    const interval = setInterval(() => {
+      let total = 0
+      positions.forEach(pos => {
+        const baseData = INITIAL_MARKET_DATA.find(i => i.symbol === pos.instrumentId)
+        const basePrice = baseData?.price || pos.entryPrice
+        const currentPrice = basePrice + (Math.random() - 0.5) * (basePrice * 0.005)
+        const diff = currentPrice - pos.entryPrice
+        total += diff * (pos.quantity || 1) * (pos.side === 'LONG' ? 1 : -1)
+      })
+      setUnrealizedPnl(total)
+    }, 3000)
 
-    setDocumentNonBlocking(doc(db, 'users', user.uid, 'strategies', strategyId), strategyData, { merge: true });
-    
-    toast({
-      title: "Strategy Seeded",
-      description: "GoldenCross has been added to your Strategy Library."
-    });
-  }
+    return () => clearInterval(interval)
+  }, [positions])
 
-  const balances = {
-    total: profile?.totalBalance ?? (isLoading ? 0 : 100000),
-    vault: profile?.vaultBalance ?? (isLoading ? 0 : 100000),
-    trading: profile?.tradingBalance ?? 0
-  }
+  const balances = useMemo(() => ({
+    vault: profile?.vaultBalance || 0,
+    trading: profile?.tradingBalance || 0,
+    liveEquity: (profile?.totalBalance || 100000) + unrealizedPnl,
+    invested: positions?.reduce((acc: number, pos: any) => acc + (pos.investAmt || 0), 0) || 0
+  }), [profile, unrealizedPnl, positions])
 
-  // Calculate Progress based on settings
+  // Calculate unique trading days
+  const tradingDays = useMemo(() => {
+    if (!trades || trades.length === 0) return 0
+    const uniqueDays = new Set(trades.map((t: any) => {
+      const date = t.timestamp?.toDate ? t.timestamp.toDate() : new Date()
+      return date.toDateString()
+    }))
+    return uniqueDays.size
+  }, [trades])
+
   const progress = useMemo(() => {
     if (!profile) return 0;
     const target = parseFloat(profile.accountSize || "100000")
-    const current = profile.totalBalance || 100000
+    const current = balances.liveEquity
     const profit = current - target
     if (profit <= 0) return 0
     const goalPct = profile.challengePhase === 'phase1' ? 0.10 : 0.05
     const progressVal = (profit / (target * goalPct)) * 100
     return Math.min(Math.max(progressVal, 0), 100)
-  }, [profile])
+  }, [profile, balances.liveEquity])
+
+  const seedDemoData = () => {
+    if (!db || !user) return;
+    const strategyId = "golden-cross-demo";
+    const strategyData = {
+      id: strategyId,
+      name: "GoldenCross (EMA 8/21)",
+      code: `class GoldenCross(Strategy):\n    def should_long(self):\n        short_ema = ta.ema(self.candles, 8)\n        long_ema = ta.ema(self.candles, 21)\n        return short_ema > long_ema`,
+      language: 'python',
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    setDocumentNonBlocking(doc(db, 'users', user.uid, 'strategies', strategyId), strategyData, { merge: true });
+    toast({ title: "Strategy Seeded", description: "GoldenCross has been added to your Strategy Library." });
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-auto p-6 space-y-6">
@@ -144,12 +175,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-primary/10 border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-xs font-bold uppercase text-primary">Total Balance (Net)</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase text-primary">Live Equity (Inc. PnL)</CardTitle>
             <Coins className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold font-mono">${balances.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">Realized Asset Value</p>
+            <div className="text-3xl font-bold font-mono">${balances.liveEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold tracking-tighter">
+              {unrealizedPnl >= 0 ? '+' : ''}${unrealizedPnl.toFixed(2)} Floating PnL
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-card">
@@ -199,7 +232,7 @@ export default function DashboardPage() {
                  </div>
                  <Progress value={progress} className="h-2.5" />
                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Equity: ${balances.total.toLocaleString()}</span>
+                    <span>Current Equity: ${balances.liveEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                     <span>Target: ${(parseFloat(profile?.accountSize || "100000") * (1 + (profile?.challengePhase === 'phase1' ? 0.10 : profile?.challengePhase === 'phase2' ? 0.05 : 0))).toLocaleString()}</span>
                  </div>
               </div>
@@ -209,7 +242,7 @@ export default function DashboardPage() {
                    <div className="flex items-center gap-2 text-muted-foreground">
                      <CalendarDays className="w-3" /> Trading Days
                    </div>
-                   <span className="font-bold">3 / 5</span>
+                   <span className="font-bold">{tradingDays} / 5</span>
                 </div>
                 <Link href="/live" className="w-full">
                   <Button variant="secondary" className="w-full h-9 gap-2 text-xs font-bold hover:bg-primary/20 transition-colors">
@@ -258,7 +291,7 @@ export default function DashboardPage() {
                <ShieldAlert className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                <div className="text-xs">
                  <div className="font-bold text-orange-500 uppercase mb-1">Consistency Warning</div>
-                 Your current trade profit represents 65% of your target. Ensure diversified trading to meet consistency requirements.
+                 {tradingDays < 5 ? `You need ${5 - tradingDays} more active trading days to satisfy consistency rules.` : 'Trading day requirement met.'}
                </div>
             </div>
             
