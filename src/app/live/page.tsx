@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
@@ -18,7 +17,7 @@ import {
   Terminal, Loader2, Calculator,
   Clock, Globe,
   BarChart4, ArrowRightLeft, Coins, Landmark,
-  Wallet, Sparkles
+  Wallet, Sparkles, TrendingUp
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
