@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -62,6 +62,9 @@ export default function DashboardPage() {
         tradingBalance: 0,
         currency: 'USD',
         timezone: 'UTC',
+        propFirmMode: true,
+        accountSize: "100000",
+        challengePhase: "phase1",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }
@@ -109,6 +112,18 @@ export default function DashboardPage() {
     trading: profile?.tradingBalance ?? 0
   }
 
+  // Calculate Progress based on settings
+  const progress = useMemo(() => {
+    if (!profile) return 0;
+    const target = parseFloat(profile.accountSize || "100000")
+    const current = profile.totalBalance || 100000
+    const profit = current - target
+    if (profit <= 0) return 0
+    const goalPct = profile.challengePhase === 'phase1' ? 0.10 : 0.05
+    const progressVal = (profit / (target * goalPct)) * 100
+    return Math.min(Math.max(progressVal, 0), 100)
+  }, [profile])
+
   return (
     <div className="flex-1 flex flex-col overflow-auto p-6 space-y-6">
       <div className="flex justify-between items-end">
@@ -121,7 +136,7 @@ export default function DashboardPage() {
             <Sparkles className="w-4 h-4 text-accent" /> Seed Institutional Strategy
           </Button>
           <Badge variant="outline" className="px-3 py-1 bg-primary/10 border-primary/20 text-primary">PROP FIRM ACTIVE</Badge>
-          <Badge variant="secondary" className="px-3 py-1">Phase 1 Evaluation</Badge>
+          <Badge variant="secondary" className="px-3 py-1 uppercase font-bold text-[10px]">{profile?.challengePhase || 'Phase 1'}</Badge>
         </div>
       </div>
 
@@ -168,9 +183,9 @@ export default function DashboardPage() {
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
               <div className="lg:col-span-3 space-y-1">
                  <h2 className="text-lg font-bold flex items-center gap-2">
-                   <ShieldCheck className="w-5 h-5 text-primary" /> Challenge: Phase 1
+                   <ShieldCheck className="w-5 h-5 text-primary" /> Challenge: {profile?.challengePhase === 'funded' ? 'HWM Mode' : profile?.challengePhase === 'phase2' ? 'Phase 2' : 'Phase 1'}
                  </h2>
-                 <p className="text-xs text-muted-foreground">Profit Target: 10% ($10,000)</p>
+                 <p className="text-xs text-muted-foreground">Allocation: ${parseFloat(profile?.accountSize || "100000").toLocaleString()}</p>
                  <div className="flex gap-2 mt-2">
                     <Badge variant="outline" className="text-[9px] h-4">MIN 5 DAYS</Badge>
                     <Badge variant="outline" className="text-[9px] h-4">CONSISTENCY REQ.</Badge>
@@ -180,12 +195,12 @@ export default function DashboardPage() {
               <div className="lg:col-span-6 space-y-3">
                  <div className="flex justify-between text-xs font-bold uppercase">
                     <span className="flex items-center gap-1.5"><Target className="w-3 h-3 text-primary" /> Progress to Goal</span>
-                    <span className="text-primary">32.1%</span>
+                    <span className="text-primary">{progress.toFixed(1)}%</span>
                  </div>
-                 <Progress value={32.1} className="h-2.5" />
+                 <Progress value={progress} className="h-2.5" />
                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Current: +$3,210.12</span>
-                    <span>Remaining: $6,789.88</span>
+                    <span>Equity: ${balances.total.toLocaleString()}</span>
+                    <span>Target: ${(parseFloat(profile?.accountSize || "100000") * (1 + (profile?.challengePhase === 'phase1' ? 0.10 : profile?.challengePhase === 'phase2' ? 0.05 : 0))).toLocaleString()}</span>
                  </div>
               </div>
 

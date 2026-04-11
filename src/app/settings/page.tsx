@@ -52,6 +52,11 @@ export default function SettingsPage() {
     currency: 'USD'
   })
 
+  // Settings State (Persisted to Firestore)
+  const [propFirmMode, setPropFirmMode] = useState(true)
+  const [accountSize, setAccountSize] = useState("100000")
+  const [challengePhase, setChallengePhase] = useState("phase1")
+
   // Sync form with Firestore data
   useEffect(() => {
     if (profileData) {
@@ -61,17 +66,13 @@ export default function SettingsPage() {
         timezone: profileData.timezone || 'UTC',
         currency: profileData.currency || 'USD'
       })
+      setPropFirmMode(profileData.propFirmMode !== undefined ? profileData.propFirmMode : true)
+      setAccountSize(profileData.accountSize || "100000")
+      setChallengePhase(profileData.challengePhase || "phase1")
     } else if (user) {
         setProfileForm(prev => ({ ...prev, username: user.email?.split('@')[0] || '' }))
     }
   }, [profileData, user])
-
-  // Prop Firm & API State
-  const [alpacaKey, setAlpacaKey] = useState("PKP5PYAIFV6P3TFZ56D5S5F5RD")
-  const [alpacaSecret, setAlpacaSecret] = useState("25yLTf393nHQwBEwJEatF4dMLktwRZbqr8QnuhvNHesR")
-  const [propFirmMode, setPropFirmMode] = useState(true)
-  const [accountSize, setAccountSize] = useState("100000")
-  const [challengePhase, setChallengePhase] = useState("phase1")
 
   const handleLogout = async () => {
     try {
@@ -96,6 +97,9 @@ export default function SettingsPage() {
     
     const updatedProfile = {
       ...profileForm,
+      propFirmMode,
+      accountSize,
+      challengePhase,
       id: user.uid,
       email: user.email,
       updatedAt: serverTimestamp(),
