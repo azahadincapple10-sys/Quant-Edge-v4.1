@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -259,7 +260,6 @@ export default function LiveTradingPage() {
       const sim = livePrices[posId] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: 1 }
       
       // Calculate return amount (Investment + Profit)
-      // pos.investAmt is the original dollar amount deducted.
       const originalInvestment = pos.investAmt || ((pos.quantity || 0) * (pos.entryPrice || 0))
       const returnAmt = originalInvestment + (sim?.profitUsd || 0)
 
@@ -308,22 +308,22 @@ export default function LiveTradingPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-6 space-y-6 overflow-auto bg-[#080A0C]">
-      <div className="flex justify-between items-center">
+    <div className="flex-1 flex flex-col p-4 lg:p-6 space-y-6 overflow-auto bg-[#080A0C]">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3">
-            Execution Console <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[10px]">AWS Remote Active</Badge>
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight font-headline flex flex-wrap items-center gap-2">
+            Execution Console <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[9px] lg:text-[10px]">AWS Remote Active</Badge>
           </h1>
-          <p className="text-muted-foreground">Monitoring your institutional AWS EC2 workers in real-time.</p>
+          <p className="text-xs lg:text-sm text-muted-foreground mt-1">Monitoring your institutional AWS EC2 workers in real-time.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Landmark className="w-4 h-4" /> Transfer to Trading
+              <Button variant="outline" className="flex-1 sm:flex-none gap-2 text-xs h-9">
+                <Landmark className="w-4 h-4" /> Transfer
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
+            <DialogContent className="bg-card border-border sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Allocate Trading Capital</DialogTitle>
                 <DialogDescription>Move funds from your Vault into the active Trading balance.</DialogDescription>
@@ -349,55 +349,54 @@ export default function LiveTradingPage() {
 
           <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 bg-green-600 hover:bg-green-700">
-                <Play className="w-4 h-4" /> Deploy to AWS Instance
+              <Button className="flex-1 sm:flex-none gap-2 bg-green-600 hover:bg-green-700 text-xs h-9">
+                <Play className="w-4 h-4" /> Deploy to AWS
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
+            <DialogContent className="bg-card border-border sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Deploy Compliant Strategy</DialogTitle>
-                <DialogDescription>Logic executes on secure AWS worker. Investment deducted from Trading Balance.</DialogDescription>
+                <DialogDescription>Logic executes on secure AWS worker.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="flex justify-between text-xs px-2 py-1 rounded bg-accent/10 border border-accent/20">
-                  <span className="text-accent font-bold">Trading Balance Available:</span>
+                  <span className="text-accent font-bold">Trading Balance:</span>
                   <span className="text-white font-mono">${profile?.tradingBalance?.toLocaleString() || '0.00'}</span>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">Strategy</Label>
+                  <Label className="text-right text-xs">Strategy</Label>
                   <div className="col-span-3">
                     <Select value={config.strategyId} onValueChange={(v) => setConfig({...config, strategyId: v})}>
-                      <SelectTrigger><SelectValue placeholder="Select Strategy" /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Strategy" /></SelectTrigger>
                       <SelectContent>
-                        {savedStrategies?.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        {savedStrategies?.map(s => <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">Symbol</Label>
-                  <Input value={config.symbol} onChange={(e) => setConfig({...config, symbol: e.target.value})} className="col-span-3" />
+                  <Label className="text-right text-xs">Symbol</Label>
+                  <Input value={config.symbol} onChange={(e) => setConfig({...config, symbol: e.target.value})} className="col-span-3 h-9 text-xs" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">Investment</Label>
+                  <Label className="text-right text-xs">Invest</Label>
                   <div className="col-span-3 relative">
                      <span className="absolute left-3 top-2.5 text-muted-foreground text-xs">$</span>
-                     <Input value={config.amount} onChange={(e) => setConfig({...config, amount: e.target.value})} className="pl-6" type="number" />
+                     <Input value={config.amount} onChange={(e) => setConfig({...config, amount: e.target.value})} className="pl-6 h-9 text-xs" type="number" />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">Worker</Label>
+                  <Label className="text-right text-xs">Worker</Label>
                   <Select value={config.worker} onValueChange={(v) => setConfig({...config, worker: v})}>
-                      <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="col-span-3 h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ec2-01">AWS EC2 (us-east-1) - Online</SelectItem>
-                        <SelectItem value="ec2-02" disabled>AWS EC2 (eu-west-1) - Offline</SelectItem>
+                        <SelectItem value="ec2-01" className="text-xs">AWS EC2 (us-east-1)</SelectItem>
                       </SelectContent>
                   </Select>
                 </div>
               </div>
               <DialogFooter>
-                 <Button onClick={deployBot} className="w-full bg-primary" disabled={!config.strategyId || isDeploying}>
+                 <Button onClick={deployBot} className="w-full bg-primary h-10" disabled={!config.strategyId || isDeploying}>
                    {isDeploying ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                    Start Remote Execution
                  </Button>
@@ -411,17 +410,17 @@ export default function LiveTradingPage() {
         <div className="lg:col-span-1 space-y-6">
           <Card className="bg-card/40 border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
-                <Landmark className="w-4 h-4" /> Balances
+              <CardTitle className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2">
+                <Landmark className="w-3.5 h-3.5" /> Balances
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                <div className="space-y-1">
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold">Vault (Total)</div>
+                  <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Vault (Total)</div>
                   <div className="text-lg font-bold font-mono">${profile?.vaultBalance?.toLocaleString() || '0.00'}</div>
                </div>
                <div className="space-y-1">
-                  <div className="text-[10px] text-accent uppercase font-bold">Trading Account</div>
+                  <div className="text-[9px] text-accent uppercase font-bold tracking-wider">Trading Account</div>
                   <div className="text-xl font-bold font-mono text-accent">${profile?.tradingBalance?.toLocaleString() || '0.00'}</div>
                </div>
                <Button variant="outline" size="sm" className="w-full text-[10px] h-7 gap-2" onClick={() => setIsTransferOpen(true)}>
@@ -432,45 +431,45 @@ export default function LiveTradingPage() {
 
           <Card className="bg-primary/5 border-primary/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase text-primary flex items-center justify-between">
+              <CardTitle className="text-[10px] font-bold uppercase text-primary flex items-center justify-between">
                 Account Equity
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="w-3.5 h-3.5" />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-2xl font-bold font-mono">${(profile?.totalBalance || 100000).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
               <div className="space-y-1.5">
-                <div className="flex justify-between text-[10px] uppercase font-bold">
-                  <span>Phase 1 Goal: $110,000</span>
+                <div className="flex justify-between text-[9px] uppercase font-bold tracking-wider">
+                  <span>Goal: $110,000</span>
                   <span className="text-primary">32.1%</span>
                 </div>
-                <Progress value={32.1} className="h-1.5" />
+                <Progress value={32.1} className="h-1" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-black/40 border-primary/10">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-bold uppercase flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-primary" /> Risk Calculator
+              <CardTitle className="text-[10px] font-bold uppercase flex items-center gap-2">
+                <Calculator className="w-3.5 h-3.5 text-primary" /> Risk Calculator
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-[10px]">Risk %</Label>
-                  <Input value={calcRiskPct} onChange={(e) => setCalcRiskPct(e.target.value)} className="h-7 text-xs" />
+                  <Label className="text-[9px] uppercase text-muted-foreground">Risk %</Label>
+                  <Input value={calcRiskPct} onChange={(e) => setCalcRiskPct(e.target.value)} className="h-7 text-[11px] px-2" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px]">SL (Pips)</Label>
-                  <Input value={calcStopLoss} onChange={(e) => setCalcStopLoss(e.target.value)} className="h-7 text-xs" />
+                  <Label className="text-[9px] uppercase text-muted-foreground">SL (Pips)</Label>
+                  <Input value={calcStopLoss} onChange={(e) => setCalcStopLoss(e.target.value)} className="h-7 text-[11px] px-2" />
                 </div>
               </div>
-              <Button size="sm" className="w-full h-7 text-xs" onClick={calculateRisk}>Calculate Size</Button>
+              <Button size="sm" className="w-full h-7 text-[10px] uppercase font-bold" onClick={calculateRisk}>Calculate Size</Button>
               {calcResult && (
                 <div className="p-2 rounded bg-primary/5 border border-primary/20 text-center">
-                  <div className="text-[10px] text-muted-foreground">Lot Size</div>
-                  <div className="text-lg font-bold text-primary">{calcResult.size}</div>
+                  <div className="text-[9px] text-muted-foreground uppercase">Lot Size</div>
+                  <div className="text-base font-bold text-primary">{calcResult.size}</div>
                 </div>
               )}
             </CardContent>
@@ -479,102 +478,102 @@ export default function LiveTradingPage() {
 
         <div className="lg:col-span-3 space-y-6">
           <Card className="border-border/50 bg-card/30 min-h-[400px]">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 py-4">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/5 py-4 gap-4">
                <CardTitle className="text-sm font-bold flex items-center gap-2">
                  <Activity className="w-4 h-4 text-primary" /> Remote Deployments
                </CardTitle>
-               <div className="flex items-center gap-4">
-                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                   <Globe className="w-3 h-3" /> Region: US-EAST-1
+               <div className="flex flex-wrap items-center gap-3">
+                 <div className="flex items-center gap-2 text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
+                   <Globe className="w-3 h-3 text-primary/60" /> us-east-1
                  </div>
-                 <Badge variant="outline" className="text-[10px]">{persistentPositions?.length || 0} Bot(s) Running</Badge>
+                 <Badge variant="outline" className="text-[9px] py-0 px-2 h-5">{persistentPositions?.length || 0} Worker(s)</Badge>
                </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-hidden">
               {isLoadingPositions ? (
                 <div className="h-48 flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                 </div>
               ) : !persistentPositions || persistentPositions.length === 0 ? (
-                <div className="h-64 flex flex-col items-center justify-center text-muted-foreground opacity-30 gap-3">
-                   <Zap className="w-12 h-12" />
-                   <p className="text-sm font-medium">Infrastructure idle. No active AWS sessions.</p>
-                   <Button variant="ghost" size="sm" onClick={() => setIsConfigOpen(true)}>Deploy First Worker</Button>
+                <div className="h-64 flex flex-col items-center justify-center text-muted-foreground opacity-30 gap-3 px-4 text-center">
+                   <Zap className="w-10 h-10" />
+                   <p className="text-xs lg:text-sm font-medium">Infrastructure idle. No active AWS sessions detected.</p>
+                   <Button variant="ghost" size="sm" className="text-[10px] uppercase tracking-wider" onClick={() => setIsConfigOpen(true)}>Deploy First Worker</Button>
                 </div>
               ) : (
                 <div className="divide-y divide-white/5">
                   {persistentPositions.map(pos => {
                     const sim = livePrices[pos.id] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: pos.tradeCount || 1, chart: [] }
                     return (
-                      <div key={pos.id} className="p-6 flex flex-col gap-6 hover:bg-white/[0.02] transition-all">
+                      <div key={pos.id} className="p-4 lg:p-6 flex flex-col gap-6 hover:bg-white/[0.01] transition-all">
                         <div className="w-full space-y-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-lg ${pos.side === 'LONG' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                              <div className={`p-2 rounded-lg shrink-0 ${pos.side === 'LONG' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                                 {pos.side === 'LONG' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
                               </div>
-                              <div>
-                                <div className="text-lg font-bold flex items-center gap-2">
+                              <div className="min-w-0">
+                                <div className="text-base lg:text-lg font-bold flex flex-wrap items-center gap-2 truncate">
                                   {pos.instrumentId}
-                                  <Badge variant="outline" className="text-[9px] uppercase">{pos.strategyName}</Badge>
-                                  <Badge variant="secondary" className="text-[9px] h-5 bg-primary/10 text-primary border-primary/20">{pos.timeframe || '1h'}</Badge>
+                                  <Badge variant="outline" className="text-[8px] lg:text-[9px] uppercase h-4 px-1">{pos.strategyName}</Badge>
+                                  <Badge variant="secondary" className="text-[8px] lg:text-[9px] h-4 px-1 bg-primary/10 text-primary">{pos.timeframe || '1h'}</Badge>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                                   <RuntimeDisplay entryTime={pos.entryTime} />
-                                  <span className="text-[10px] text-primary/60 font-mono">ID: {pos.id.substring(0, 8)}</span>
-                                  <Badge variant="secondary" className="text-[8px] h-4 uppercase">AWS_{pos.workerId}</Badge>
+                                  <span className="text-[9px] text-primary/60 font-mono hidden xs:inline">ID:{pos.id.substring(0, 6)}</span>
+                                  <Badge variant="secondary" className="text-[8px] h-3.5 px-1 uppercase font-bold tracking-tighter">AWS_{pos.workerId}</Badge>
                                 </div>
                               </div>
                             </div>
                             
-                            <div className="flex gap-8 items-center">
-                               <div className="text-right">
-                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Net Profit</div>
-                                  <div className={`text-xl font-mono font-bold ${sim.profitUsd >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            <div className="flex gap-4 lg:gap-8 items-center justify-between w-full md:w-auto border-t md:border-t-0 border-white/5 pt-4 md:pt-0">
+                               <div className="text-left md:text-right">
+                                  <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Net Profit</div>
+                                  <div className={`text-base lg:text-xl font-mono font-bold ${sim.profitUsd >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                     {sim.profitUsd >= 0 ? '+' : ''}${sim.profitUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                   </div>
                                </div>
-                               <div className="text-right">
-                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">PnL (%)</div>
-                                  <div className={`text-xl font-mono font-bold ${sim.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                               <div className="text-left md:text-right">
+                                  <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">PnL (%)</div>
+                                  <div className={`text-base lg:text-xl font-mono font-bold ${sim.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                     {sim.pnl >= 0 ? '+' : ''}{sim.pnl.toFixed(2)}%
                                   </div>
                                </div>
                                <div className="text-right">
-                                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Executions</div>
-                                  <div className="text-xl font-mono font-bold flex items-center gap-2 justify-end">
-                                    <ArrowRightLeft className="w-3 h-3 text-primary" /> {sim.tradeCount}
+                                  <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-tight">Execs</div>
+                                  <div className="text-base lg:text-xl font-mono font-bold flex items-center gap-1.5 justify-end">
+                                    <ArrowRightLeft className="w-3.5 h-3.5 text-primary" /> {sim.tradeCount}
                                   </div>
                                </div>
                             </div>
                           </div>
                           
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                              <Button 
                                variant="destructive" 
                                size="sm" 
-                               className="flex-1 h-8 text-[11px] font-bold bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                               className="flex-1 h-8 text-[10px] font-bold bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white uppercase tracking-wider"
                                onClick={() => closePosition(pos.id)}
                              >
                                Kill Remote Process
                              </Button>
-                             <Button variant="outline" size="sm" className="h-8 text-[11px] flex-1" onClick={() => window.open('/debug', '_blank')}>
+                             <Button variant="outline" size="sm" className="h-8 text-[10px] flex-1 uppercase tracking-wider font-bold" onClick={() => window.open('/debug', '_blank')}>
                                View Server Logs
                              </Button>
                           </div>
 
-                          <div className="w-full space-y-2">
-                             <div className="flex justify-between items-center px-1">
-                               <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                          <div className="w-full space-y-3">
+                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-1 gap-1">
+                               <span className="text-[9px] text-muted-foreground uppercase font-bold flex items-center gap-1.5">
                                  <BarChart4 className="w-3 h-3 text-primary" /> {pos.instrumentId} Performance Trend ({pos.timeframe || '1h'})
                                </span>
                                <span className="text-[10px] font-mono text-primary font-bold">
-                                 Current: ${sim.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                 Mark: ${sim.price.toLocaleString(undefined, {minimumFractionDigits: 2})}
                                </span>
                              </div>
-                             <div className="w-full h-48 bg-black/40 rounded-lg border border-white/5 overflow-hidden p-2">
+                             <div className="w-full h-40 lg:h-48 bg-black/40 rounded-lg border border-white/5 overflow-hidden p-2">
                                <ResponsiveContainer width="100%" height="100%">
-                                  <AreaChart data={sim.chart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                  <AreaChart data={sim.chart} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                                     <defs>
                                       <linearGradient id={`color-${pos.id}`} x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor={sim.pnl >= 0 ? "#38D94F" : "#F03C3C"} stopOpacity={0.4}/>
@@ -587,17 +586,17 @@ export default function LiveTradingPage() {
                                       hide={false} 
                                       axisLine={false} 
                                       tickLine={false} 
-                                      tick={{ fontSize: 9, fill: '#666' }} 
+                                      tick={{ fontSize: 8, fill: '#555' }} 
                                     />
                                     <YAxis 
                                       domain={['auto', 'auto']} 
                                       axisLine={false} 
                                       tickLine={false} 
-                                      tick={{ fontSize: 9, fill: '#666' }} 
+                                      tick={{ fontSize: 8, fill: '#555' }} 
                                       orientation="right"
                                     />
                                     <Tooltip 
-                                      contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', borderRadius: '8px', fontSize: '10px' }}
+                                      contentStyle={{ backgroundColor: '#0D0F11', border: '1px solid #2e2e2e', borderRadius: '6px', fontSize: '9px' }}
                                       itemStyle={{ color: sim.pnl >= 0 ? '#38D94F' : '#F03C3C' }}
                                       formatter={(value: number) => [`$${value.toLocaleString(undefined, {minimumFractionDigits: 2})}`, 'Price']}
                                     />
@@ -625,12 +624,12 @@ export default function LiveTradingPage() {
 
           <Card className="bg-black border-primary/20 overflow-hidden">
             <div className="px-4 py-2 border-b border-white/5 bg-primary/5 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-primary flex items-center gap-2">
+                <span className="text-[9px] font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
                   <Terminal className="w-3 h-3" /> AWS_REMOTE_STDOUT_STREAM
                 </span>
-                <Badge variant="outline" className="text-[8px] bg-green-500/10 text-green-500 border-none">LIVE FEED</Badge>
+                <Badge variant="outline" className="text-[8px] bg-green-500/10 text-green-500 border-none px-1 h-4">LIVE FEED</Badge>
             </div>
-            <CardContent className="p-4 h-32 overflow-y-auto font-mono text-[10px] space-y-1 text-blue-300">
+            <CardContent className="p-4 h-32 overflow-y-auto font-mono text-[9px] space-y-1 text-blue-300">
               {logs.map((l, i) => <div key={i}>{l}</div>)}
               <div ref={logEndRef} />
             </CardContent>
