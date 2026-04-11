@@ -18,7 +18,7 @@ import {
   Terminal, Loader2, Calculator,
   Lock, TrendingUp, Clock, Server, Globe,
   BarChart4, ArrowRightLeft, Coins, Landmark, ArrowRight,
-  Wallet, Sparkles
+  Wallet, Sparkles, Database
 } from "lucide-react"
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip, CartesianGrid
@@ -68,7 +68,7 @@ export default function LiveTradingPage() {
   const [transferAmount, setTransferAmount] = useState("5000")
   const [logs, setLogs] = useState<string[]>([
     "[SYSTEM] Terminal Initialized.",
-    "[API] Binance Public Feed connected.",
+    "[API] Exchange Public Feeds connected.",
     "[AWS] Worker v2.4 initialized and awaiting instructions."
   ])
   
@@ -78,7 +78,7 @@ export default function LiveTradingPage() {
 
   const [config, setConfig] = useState({
     strategyId: '',
-    broker: 'alpaca_paper',
+    broker: 'binance',
     symbol: 'BTC/USDT',
     amount: '5000',
     worker: 'ec2-01',
@@ -236,11 +236,11 @@ export default function LiveTradingPage() {
     setLogs(prev => [...prev, 
       `[SYSTEM] Booting Compliance Engine...`, 
       `[AWS] Transmitting deployment intent to ${config.worker}...`,
-      `[AUTH] Authenticating with ${config.broker}...`, 
-      `[SUCCESS] Worker assigned. Execution starting.`
+      `[AUTH] Authenticating with ${config.broker.toUpperCase()}...`, 
+      `[SUCCESS] Worker assigned via ${config.broker.toUpperCase()}. Execution starting.`
     ])
     
-    const strategy = savedStrategies?.find(s => s.id === config.strategyId)
+    const strategy = savedStrategies?.find((s: any) => s.id === config.strategyId)
     const startPrice = INITIAL_MARKET_DATA.find(i => i.symbol === config.symbol)?.price || 64000
     
     const positionId = doc(collection(db, 'temp')).id
@@ -249,6 +249,7 @@ export default function LiveTradingPage() {
       instrumentId: config.symbol,
       strategyId: config.strategyId,
       strategyName: strategy?.name || "Bot",
+      broker: config.broker,
       side: 'LONG',
       entryPrice: startPrice,
       quantity: investAmt / startPrice,
@@ -274,7 +275,7 @@ export default function LiveTradingPage() {
         positionData,
         { merge: true }
       )
-      toast({ title: "Remote Bot Deployed", description: `Strategy logic now executing on ${config.worker}.` })
+      toast({ title: "Remote Bot Deployed", description: `Strategy logic now executing on ${config.worker} via ${config.broker.toUpperCase()}.` })
     } catch (e) {
       toast({ variant: "destructive", title: "Deployment Failed" })
     } finally {
@@ -285,7 +286,7 @@ export default function LiveTradingPage() {
   const closePosition = async (posId: string) => {
     if (!user || !db || !profile) return
     try {
-      const pos = persistentPositions?.find(p => p.id === posId)
+      const pos = persistentPositions?.find((p: any) => p.id === posId)
       if (!pos) return
 
       const sim = livePrices[posId] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: 1 }
@@ -305,7 +306,8 @@ export default function LiveTradingPage() {
         profitUsd: sim.profitUsd,
         timestamp: serverTimestamp(),
         userId: user.uid,
-        type: 'LIVE_EXECUTION'
+        type: 'LIVE_EXECUTION',
+        broker: pos.broker || 'binance'
       }
       
       await addDocumentNonBlocking(collection(db, 'users', user.uid, 'tradingAccounts', 'default', 'trades'), tradeData)
@@ -319,7 +321,7 @@ export default function LiveTradingPage() {
 
       await deleteDocumentNonBlocking(doc(db, 'users', user.uid, 'tradingAccounts', 'default', 'positions', posId))
       
-      setLogs(prev => [...prev, `[AWS] Kill signal sent to worker for ${posId}.`, `[SUCCESS] Position closed.`])
+      setLogs(prev => [...prev, `[AWS] Kill signal sent to worker for ${posId}.`, `[SUCCESS] Position closed on ${pos.broker?.toUpperCase() || 'BINANCE'}.`])
       toast({ title: "Position Closed", description: `$${returnAmt.toLocaleString()} returned to Trading Balance.` })
     } catch (e) {
       toast({ variant: "destructive", title: "Error closing position" })
@@ -338,7 +340,7 @@ export default function LiveTradingPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight font-headline flex flex-wrap items-center gap-2">
-            Execution Console <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[9px] lg:text-[10px]">LIVE BINANCE DATA</Badge>
+            Execution Console <Badge className="bg-primary/20 text-primary border-primary/30 uppercase text-[9px] lg:text-[10px]">LIVE EXCHANGE DATA</Badge>
           </h1>
           <p className="text-xs lg:text-sm text-muted-foreground mt-1">Monitoring your institutional AWS EC2 workers in real-time.</p>
         </div>
@@ -363,7 +365,7 @@ export default function LiveTradingPage() {
                   <Label>Amount to Transfer</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                    <Input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} className="pl-7" type="number" />
+                    <Input value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} className="pl-7 bg-background" type="number" />
                   </div>
                 </div>
               </div>
@@ -390,33 +392,46 @@ export default function LiveTradingPage() {
                   <span className="text-white font-mono">${profile?.tradingBalance?.toLocaleString() || '0.00'}</span>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-xs">Exchange</Label>
+                  <div className="col-span-3">
+                    <Select value={config.broker} onValueChange={(v) => setConfig({...config, broker: v})}>
+                      <SelectTrigger className="h-9 text-xs bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="binance" className="text-xs">Binance (Crypto)</SelectItem>
+                        <SelectItem value="alpaca" className="text-xs">Alpaca (Stocks/Paper)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-xs">Strategy</Label>
                   <div className="col-span-3">
                     <Select value={config.strategyId} onValueChange={(v) => setConfig({...config, strategyId: v})}>
-                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select Strategy" /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs bg-background"><SelectValue placeholder="Select Strategy" /></SelectTrigger>
                       <SelectContent>
-                        {savedStrategies?.map(s => <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>)}
+                        {savedStrategies?.map((s: any) => <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-xs">Symbol</Label>
-                  <Input value={config.symbol} onChange={(e) => setConfig({...config, symbol: e.target.value})} className="col-span-3 h-9 text-xs" />
+                  <Input value={config.symbol} onChange={(e) => setConfig({...config, symbol: e.target.value})} className="col-span-3 h-9 text-xs bg-background" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-xs">Invest</Label>
                   <div className="col-span-3 relative">
                      <span className="absolute left-3 top-2.5 text-muted-foreground text-xs">$</span>
-                     <Input value={config.amount} onChange={(e) => setConfig({...config, amount: e.target.value})} className="pl-6 h-9 text-xs" type="number" />
+                     <Input value={config.amount} onChange={(e) => setConfig({...config, amount: e.target.value})} className="pl-6 h-9 text-xs bg-background" type="number" />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-xs">Worker</Label>
                   <Select value={config.worker} onValueChange={(v) => setConfig({...config, worker: v})}>
-                      <SelectTrigger className="col-span-3 h-9 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="col-span-3 h-9 text-xs bg-background"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ec2-01" className="text-xs">AWS EC2 (us-east-1)</SelectItem>
+                        <SelectItem value="ec2-02" className="text-xs">AWS EC2 (eu-west-1)</SelectItem>
                       </SelectContent>
                   </Select>
                 </div>
@@ -515,11 +530,11 @@ export default function LiveTradingPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-[9px] uppercase text-muted-foreground">Risk %</Label>
-                  <Input value={calcRiskPct} onChange={(e) => setCalcRiskPct(e.target.value)} className="h-7 text-[11px] px-2" />
+                  <Input value={calcRiskPct} onChange={(e) => setCalcRiskPct(e.target.value)} className="h-7 text-[11px] px-2 bg-background" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[9px] uppercase text-muted-foreground">SL (Pips)</Label>
-                  <Input value={calcStopLoss} onChange={(e) => setCalcStopLoss(e.target.value)} className="h-7 text-[11px] px-2" />
+                  <Input value={calcStopLoss} onChange={(e) => setCalcStopLoss(e.target.value)} className="h-7 text-[11px] px-2 bg-background" />
                 </div>
               </div>
               <Button size="sm" className="w-full h-7 text-[10px] uppercase font-bold" onClick={calculateRisk}>Calculate Size</Button>
@@ -559,7 +574,7 @@ export default function LiveTradingPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-white/5">
-                  {persistentPositions.map(pos => {
+                  {persistentPositions.map((pos: any) => {
                     const sim = livePrices[pos.id] || { price: pos.entryPrice, pnl: 0, profitUsd: 0, tradeCount: pos.tradeCount || 1, chart: [] }
                     const currentEquity = (pos.investAmt || 0) + sim.profitUsd;
                     const isProfit = sim.profitUsd >= 0;
@@ -577,6 +592,7 @@ export default function LiveTradingPage() {
                                   {pos.instrumentId}
                                   <Badge variant="outline" className="text-[8px] lg:text-[9px] uppercase h-4 px-1">{pos.strategyName}</Badge>
                                   <Badge variant="secondary" className="text-[8px] lg:text-[9px] h-4 px-1 bg-primary/10 text-primary">{pos.timeframe || '1h'}</Badge>
+                                  <Badge variant="outline" className="text-[8px] h-4 px-1 bg-muted uppercase">{pos.broker || 'BINANCE'}</Badge>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                                   <RuntimeDisplay entryTime={pos.entryTime} />

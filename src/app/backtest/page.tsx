@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   History, Coins, TrendingUp, 
   FileText, PlayCircle, Loader2,
-  CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, Sparkles, Plus, ArrowRight
+  CheckCircle2, XCircle, ArrowUpRight, ArrowDownRight, Sparkles, Plus, ArrowRight, Database
 } from "lucide-react"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase'
 import { collection, query, doc, serverTimestamp } from 'firebase/firestore'
@@ -45,6 +46,7 @@ export default function BacktestPage() {
   } | null>(null)
   
   const [selectedStrategy, setSelectedStrategy] = useState<string>("")
+  const [dataSource, setDataSource] = useState<string>("binance")
   const logEndRef = useRef<HTMLDivElement>(null)
 
   // Fetch user strategies
@@ -90,11 +92,18 @@ export default function BacktestPage() {
   }
 
   const runSimulation = () => {
-    if (!selectedStrategy) return
+    if (!selectedStrategy) {
+      toast({ variant: "destructive", title: "Missing Strategy", description: "Please select a strategy to begin simulation." })
+      return
+    }
     
     setIsRunning(true)
     setProgress(0)
-    setLogs(["[SYSTEM] Initializing Backtest Engine...", "[DATA] Fetching historical OHLCV data for BTC/USDT..."])
+    setLogs([
+      "[SYSTEM] Initializing Backtest Engine...",
+      `[DATA] Connecting to ${dataSource.toUpperCase()} API...`,
+      `[DATA] Fetching historical OHLCV data for BTC/USDT via ${dataSource}...`
+    ])
     setTrades([])
     setResults(null)
 
@@ -103,11 +112,12 @@ export default function BacktestPage() {
 
     const steps = [
       { p: 10, m: `[SYSTEM] Loading Strategy: ${stratName}` },
-      { p: 25, m: "[DATA] Pre-calculating indicators based on source code..." },
-      { p: 40, m: "[ENGINE] Starting iteration through 8,760 candles..." },
-      { p: 60, m: "[TRADE] Signal detected. Opening LONG position." },
-      { p: 75, m: "[TRADE] Target reached. Closing position." },
-      { p: 90, m: "[SYSTEM] Calculating final performance metrics..." },
+      { p: 25, m: `[DATA] Source: ${dataSource.toUpperCase()} verified. Received 10,000 bars.` },
+      { p: 40, m: "[ENGINE] Pre-calculating indicators based on source code..." },
+      { p: 60, m: "[ENGINE] Starting iteration through historical candles..." },
+      { p: 75, m: "[TRADE] Long signal detected. Executing virtual buy." },
+      { p: 85, m: "[TRADE] Target reached. Executing virtual sell." },
+      { p: 95, m: "[SYSTEM] Calculating final performance metrics..." },
       { p: 100, m: "[SUCCESS] Backtest completed successfully." }
     ]
 
@@ -123,7 +133,7 @@ export default function BacktestPage() {
         setIsRunning(false)
         finalizeResults()
       }
-    }, 800)
+    }, 600)
   }
 
   const finalizeResults = () => {
@@ -153,6 +163,7 @@ export default function BacktestPage() {
         status: 'completed',
         createdAt: serverTimestamp(),
         timeframe: '1h',
+        dataSource: dataSource,
         metrics: JSON.stringify(simulationResults)
       }
       addDocumentNonBlocking(collection(db, 'users', user.uid, 'backtests'), backtestData)
@@ -160,7 +171,7 @@ export default function BacktestPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-6 space-y-6 overflow-auto">
+    <div className="flex-1 flex flex-col p-6 space-y-6 overflow-auto bg-background">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">Strategy Backtesting</h1>
@@ -178,13 +189,27 @@ export default function BacktestPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
+              <Label>Data Source</Label>
+              <Select value={dataSource} onValueChange={setDataSource}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="binance">Binance (Crypto)</SelectItem>
+                  <SelectItem value="alpaca">Alpaca (Stocks/HFT)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Select the exchange provider for historical OHLCV data.</p>
+            </div>
+
+            <div className="space-y-2">
               <Label>Select Strategy</Label>
               <Select value={selectedStrategy} onValueChange={setSelectedStrategy}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder={isLoadingStrategies ? "Loading..." : "Select a strategy"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {savedStrategies?.map(strat => (
+                  {savedStrategies?.map((strat: any) => (
                     <SelectItem key={strat.id} value={strat.id}>{strat.name}</SelectItem>
                   ))}
                   {(!savedStrategies || savedStrategies.length === 0) && !isLoadingStrategies && (
@@ -204,7 +229,7 @@ export default function BacktestPage() {
             <div className="space-y-2">
               <Label>Symbol</Label>
               <div className="flex gap-2">
-                <Input defaultValue="BTC/USDT" className="flex-1" />
+                <Input defaultValue="BTC/USDT" className="flex-1 bg-background" />
                 <Badge variant="outline" className="bg-muted">1h</Badge>
               </div>
             </div>
@@ -212,8 +237,8 @@ export default function BacktestPage() {
             <div className="space-y-2">
               <Label>Time Range</Label>
               <div className="grid grid-cols-1 gap-2">
-                <Input type="date" defaultValue="2023-01-01" className="text-sm" />
-                <Input type="date" defaultValue="2024-01-01" className="text-sm" />
+                <Input type="date" defaultValue="2023-01-01" className="text-sm bg-background" />
+                <Input type="date" defaultValue="2024-01-01" className="text-sm bg-background" />
               </div>
             </div>
 
@@ -221,7 +246,7 @@ export default function BacktestPage() {
               <Label>Initial Capital</Label>
               <div className="relative">
                 <Coins className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input defaultValue="10,000" className="pl-9" />
+                <Input defaultValue="10,000" className="pl-9 bg-background" />
               </div>
             </div>
 
@@ -339,9 +364,9 @@ export default function BacktestPage() {
           {!isRunning && !results && (
             <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-center">
               <div className="opacity-40 flex flex-col items-center">
-                <TrendingUp className="w-16 h-16 mb-4 text-muted-foreground" />
+                <Database className="w-16 h-16 mb-4 text-muted-foreground" />
                 <h3 className="text-xl font-headline font-medium">Ready to Test</h3>
-                <p className="max-w-xs mt-2 text-sm">Configure your strategy parameters and date range on the left to begin simulation.</p>
+                <p className="max-w-xs mt-2 text-sm">Select your data source and strategy to begin simulation.</p>
               </div>
               {(!savedStrategies || savedStrategies.length === 0) && !isLoadingStrategies && (
                 <div className="mt-8 p-6 border rounded-xl bg-card/50 space-y-4 max-w-sm">
