@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BarChart3, Shield, Zap, Globe, Cpu } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
+import LogoImage from "../../image.png";
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-trading');
@@ -14,8 +15,8 @@ export default function LandingPage() {
       {/* Navigation */}
       <header className="px-4 lg:px-6 h-16 flex items-center border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-            <BarChart3 className="text-white w-5 h-5" />
+          <div className="relative w-8 h-8 rounded overflow-hidden bg-card shadow-sm">
+            <Image src={LogoImage} alt="QuantEdge logo" fill className="object-cover" />
           </div>
           <span className="font-headline font-bold text-xl">QuantEdge</span>
         </div>
@@ -110,7 +111,9 @@ export default function LandingPage() {
       <footer className="border-t border-border py-6 md:py-12">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <BarChart3 className="text-primary w-5 h-5" />
+            <div className="relative w-5 h-5 rounded overflow-hidden bg-card shadow-sm">
+              <Image src={LogoImage} alt="QuantEdge logo" fill className="object-cover" />
+            </div>
             <span className="font-bold">QuantEdge</span>
           </div>
           <p className="text-sm text-muted-foreground">© 2024 QuantEdge Inc. All rights reserved.</p>
