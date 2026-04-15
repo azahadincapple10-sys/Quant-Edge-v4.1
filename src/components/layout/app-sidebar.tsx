@@ -23,7 +23,6 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { signOut } from "firebase/auth"
 import { useAuth, useUser } from "@/firebase"
-import LogoImage from "../../../image.png"
 
 import {
   Sidebar,
@@ -86,7 +85,7 @@ export function AppSidebar() {
       <SidebarHeader className="h-16 flex items-center px-4 border-b border-border">
         <Link href="/" className="flex items-center gap-3" onClick={handleLinkClick}>
           <div className="relative w-8 h-8 rounded overflow-hidden bg-card shadow-sm">
-            <Image src={LogoImage} alt="QuantEdge logo" fill className="object-cover" />
+            <Image src="/favicon.png" alt="QuantEdge logo" fill className="object-cover" />
           </div>
           <span className="font-headline font-bold text-xl group-data-[collapsible=icon]:hidden">
             QuantEdge

@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BarChart3, Shield, Zap, Globe, Cpu } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import LogoImage from "../../image.png";
 
 export default function LandingPage() {
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-trading');
@@ -16,7 +15,7 @@ export default function LandingPage() {
       <header className="px-4 lg:px-6 h-16 flex items-center border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded overflow-hidden bg-card shadow-sm">
-            <Image src={LogoImage} alt="QuantEdge logo" fill className="object-cover" />
+            <Image src="/favicon.png" alt="QuantEdge logo" fill className="object-cover" />
           </div>
           <span className="font-headline font-bold text-xl">QuantEdge</span>
         </div>
@@ -112,7 +111,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="relative w-5 h-5 rounded overflow-hidden bg-card shadow-sm">
-              <Image src={LogoImage} alt="QuantEdge logo" fill className="object-cover" />
+              <Image src="/favicon.png" alt="QuantEdge logo" fill className="object-cover" />
             </div>
             <span className="font-bold">QuantEdge</span>
           </div>
