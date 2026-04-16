@@ -2,6 +2,9 @@ import os
 import jesse.config as config
 
 # Jesse configuration for Quant-Edge integration
+# Get absolute path for database
+db_path = os.path.join(os.path.dirname(__file__), 'data', 'jesse.db')
+
 config['env'] = {
     'exchanges': {
         'binance': {
@@ -15,7 +18,7 @@ config['env'] = {
     },
     'databases': {
         'sqlite': {
-            'path': 'jesse.db'
+            'path': db_path
         }
     },
     'logging': {

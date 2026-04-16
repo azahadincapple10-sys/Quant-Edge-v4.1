@@ -99,5 +99,4 @@ class BaseJesseStrategy(strategies.Strategy):
         """
         Cleanup before strategy termination.
         """
-        pass</content>
-<parameter name="filePath">/workspaces/Quant-Edge-v4/src/jesse/strategies/base_strategy.py
+        pass
