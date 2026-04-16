@@ -37,10 +37,15 @@ __________________________________________________________________________
 
 
 Key Data Breakdown for your logic:
-Portfolio Block: Pulls from alpaca.get_account(). It compares your current equity against the last_equity to calculate the Daily P&L.
+for Alpaca paper trading (
+    Portfolio Block: Pulls from alpaca.get_account(). It compares your current equity against the last_equity to calculate the Daily P&L.
 
-Positions Block: Iterates through alpaca.list_positions(). The "Time" reflects when the bot last validated the trade.
+    Positions Block: Iterates through alpaca.list_positions(). The "Time" reflects when the bot last validated the trade.)
+for BInannce trading SIM (
+    Portfolio Block: Pulls App Portfolio Balance. It compares your current equity against the last_equity to calculate the Daily P&L.
 
+    Positions Block: Iterates through App Portfolio Balance. The "Time" reflects when the bot last validated the trade
+)
 System Block: * Data: Shows a "green tick" if the websocket heartbeat is active.
 
 API: Measures the latency (ping) between your bot and the Alpaca servers.

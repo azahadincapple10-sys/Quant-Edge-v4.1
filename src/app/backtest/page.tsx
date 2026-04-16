@@ -50,6 +50,9 @@ export default function BacktestPage() {
   const [timeframe, setTimeframe] = useState('1h')
   const [startDate, setStartDate] = useState('2023-01-01')
   const [endDate, setEndDate] = useState('2024-01-01')
+  const [isDeploying, setIsDeploying] = useState(false)
+  const [deploymentMode, setDeploymentMode] = useState<'PAPER' | 'LIVE'>('PAPER')
+  const [deploymentExchange, setDeploymentExchange] = useState<'alpaca' | 'binance'>('alpaca')
   const logEndRef = useRef<HTMLDivElement>(null)
 
   const buildEquityData = (result: any) => {
@@ -308,6 +311,87 @@ export default function BacktestPage() {
       })
     } finally {
       setIsRunning(false)
+    }
+  }
+
+  const deployToLive = async () => {
+    if (!results || !profile) {
+      toast({ variant: "destructive", title: "Missing Data", description: "Please complete a backtest first" })
+      return
+    }
+
+    setIsDeploying(true)
+    try {
+      const botId = `bot-${selectedStrategy}-${Date.now()}`
+
+      // Get API keys from profile based on selected exchange
+      let alpacaKeyId = ""
+      let alpacaSecretKey = ""
+      let binanceApiKey = ""
+      let binanceApiSecret = ""
+
+      if (deploymentExchange === "alpaca") {
+        alpacaKeyId = profile.alpacaKeyId || ""
+        alpacaSecretKey = profile.alpacaSecretKey || ""
+        
+        if (!alpacaKeyId || !alpacaSecretKey) {
+          toast({ variant: "destructive", title: "Missing Alpaca Keys", description: "Please add your Alpaca API credentials in Settings" })
+          return
+        }
+      } else {
+        binanceApiKey = profile.binanceApiKey || ""
+        binanceApiSecret = profile.binanceApiSecret || ""
+        
+        if (!binanceApiKey || !binanceApiSecret) {
+          toast({ variant: "destructive", title: "Missing Binance Keys", description: "Please add your Binance API credentials in Settings" })
+          return
+        }
+      }
+
+      const deployResponse = await fetch('/api/live/deploy-from-backtest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          botId,
+          strategy: selectedStrategy,
+          exchange: deploymentExchange,
+          mode: deploymentMode,
+          alpacaKeyId,
+          alpacaSecretKey,
+          binanceApiKey,
+          binanceApiSecret,
+          backtestMetrics: results,
+          backtestTrades: trades,
+          initialCapital: results.startingBalance || 10000,
+        })
+      })
+
+      if (!deployResponse.ok) {
+        const error = await deployResponse.json()
+        throw new Error(error.error || "Deployment failed")
+      }
+
+      const deploymentResult = await deployResponse.json()
+
+      toast({
+        title: "Bot Deployed!",
+        description: `Live bot ${botId} is now running on ${deploymentExchange.toUpperCase()} ${deploymentMode}`,
+      })
+
+      // Redirect to live trading dashboard
+      setTimeout(() => {
+        window.location.href = '/live'
+      }, 1500)
+
+    } catch (error) {
+      console.error('Deployment error:', error)
+      toast({
+        variant: "destructive",
+        title: "Deployment Failed",
+        description: error instanceof Error ? error.message : "Failed to deploy bot",
+      })
+    } finally {
+      setIsDeploying(false)
     }
   }
 
@@ -688,6 +772,69 @@ export default function BacktestPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-500/20 bg-green-50/5">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg font-headline">
+                      <Sparkles className="w-5 h-5 text-green-500" /> Deploy to Live Trading
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Move this backtest to live trading with real or paper money
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest">Exchange</Label>
+                      <Select value={deploymentExchange} onValueChange={(val) => setDeploymentExchange(val as 'alpaca' | 'binance')}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select exchange" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="alpaca">Alpaca Markets</SelectItem>
+                          <SelectItem value="binance">Binance Futures</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest">Mode</Label>
+                      <Select value={deploymentMode} onValueChange={(val) => setDeploymentMode(val as 'PAPER' | 'LIVE')}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PAPER">Paper Trading</SelectItem>
+                          <SelectItem value="LIVE">Live Trading</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-blue-50/10 border border-blue-200/20 text-sm text-muted-foreground">
+                    <p><strong>Deployment Summary:</strong></p>
+                    <ul className="mt-2 space-y-1 text-xs">
+                      <li>✓ Starting Balance: {formatCurrency(results.startingBalance)}</li>
+                      <li>✓ Total Trades: {results.totalTrades}</li>
+                      <li>✓ Win Rate: {formatPercent(results.winRate)}</li>
+                      <li>✓ Sharpe Ratio: {results.sharpeRatio ?? 'N/A'}</li>
+                    </ul>
+                  </div>
+
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700 gap-2" 
+                    onClick={deployToLive}
+                    disabled={isDeploying}
+                  >
+                    {isDeploying ? (
+                      <> <Loader2 className="w-4 h-4 animate-spin" /> Deploying... </>
+                    ) : (
+                      <> <ArrowRight className="w-4 h-4" /> Deploy to {deploymentExchange.toUpperCase()} {deploymentMode} </>
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
             </div>
