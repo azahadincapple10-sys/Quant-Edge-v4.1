@@ -60,8 +60,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+build/lib/
+build/lib64/
 parts/
 sdist/
 var/
@@ -77,6 +77,10 @@ htmlcov/
 venv/
 ENV/
 env/
+
+# Explicitly include src/lib (source code, not Python venv)
+!src/lib/
+
 
 # Jesse-specific
 src/jesse/logs/*
