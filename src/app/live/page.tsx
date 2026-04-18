@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, TrendingUp, Building2, Zap } from "lucide-react"
+import { ActiveBotsPanel } from "@/components/ActiveBotsPanel"
 
 export default function LiveTradingHome() {
   const router = useRouter()
@@ -132,6 +133,8 @@ export default function LiveTradingHome() {
           </CardContent>
         </Card>
       </div>
+
+      <ActiveBotsPanel />
 
       <Card className="bg-muted/50 border-muted">
         <CardHeader>

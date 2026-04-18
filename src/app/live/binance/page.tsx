@@ -198,6 +198,34 @@ export default function BinanceSimTradingPage() {
       setLogs(prev => [...prev, `[SUCCESS] Order placed: ${orderId}. ${qty} ${symbol} ${side} at $${currentPrice.toFixed(2)}`])
       toast({ title: 'Order Placed', description: `${qty} ${symbol} ${side === 'BUY' ? 'bought' : 'sold'} (Testnet).` })
       
+      // Register trade as a bot for tracking
+      try {
+        const registerRes = await fetch('/api/live/register-trade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderId.toString(),
+            symbol: symbol,
+            quantity: qty,
+            side: side.toLowerCase(),
+            exchange: 'binance',
+            mode: 'PAPER',
+            binanceApiKey: profileBinanceKey,
+            binanceApiSecret: profileBinanceSecret,
+          }),
+        })
+        
+        if (registerRes.ok) {
+          const data = await registerRes.json()
+          setLogs(prev => [...prev, `[SUCCESS] Trade registered for tracking: ${data.bot?.botId}`])
+        } else {
+          const error = await registerRes.json()
+          setLogs(prev => [...prev, `[WARNING] Trade placed but tracking failed: ${error.error}`])
+        }
+      } catch (regError: any) {
+        setLogs(prev => [...prev, `[WARNING] Could not register trade for tracking: ${regError.message}`])
+      }
+      
       // Add to positions
       const newPosition = {
         symbol,

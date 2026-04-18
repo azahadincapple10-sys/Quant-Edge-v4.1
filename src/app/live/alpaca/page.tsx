@@ -179,6 +179,34 @@ export default function AlpacaPaperTradingPage() {
       setLogs(prev => [...prev, `[SUCCESS] Order placed: ${orderRes.orderId}. Status: ${orderRes.status}`])
       toast({ title: 'Order Placed', description: `${qty} shares of ${symbol} ${side === 'buy' ? 'bought' : 'sold'}.` })
       
+      // Register trade as a bot for tracking
+      try {
+        const registerRes = await fetch('/api/live/register-trade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderRes.orderId,
+            symbol: symbol.toUpperCase(),
+            quantity: qty,
+            side: side,
+            exchange: 'alpaca',
+            mode: 'PAPER',
+            alpacaKeyId: profileAlpacaKey,
+            alpacaSecretKey: profileAlpacaSecret,
+          }),
+        })
+        
+        if (registerRes.ok) {
+          const data = await registerRes.json()
+          setLogs(prev => [...prev, `[SUCCESS] Trade registered for tracking: ${data.bot?.botId}`])
+        } else {
+          const error = await registerRes.json()
+          setLogs(prev => [...prev, `[WARNING] Trade placed but tracking failed: ${error.error}`])
+        }
+      } catch (regError: any) {
+        setLogs(prev => [...prev, `[WARNING] Could not register trade for tracking: ${regError.message}`])
+      }
+      
       // Reload positions
       setIsLoadingAlpacaPositions(true)
       const positionsRes = await getAlpacaPositions({ keyId: profileAlpacaKey, secretKey: profileAlpacaSecret, paper: true })
