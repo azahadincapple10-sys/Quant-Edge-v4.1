@@ -16,7 +16,8 @@ import {
 } from 'recharts'
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase'
-import { doc } from 'firebase/firestore'
+import { doc, serverTimestamp } from 'firebase/firestore'
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates'
 import { INITIAL_MARKET_DATA } from '@/lib/market-data'
 
 function RuntimeDisplay({ entryTime }: { entryTime: any }) {
@@ -67,6 +68,7 @@ export default function BinanceSimTradingPage() {
   const [symbol, setSymbol] = useState('BTCUSDT')
   const [quantity, setQuantity] = useState('0.001')
   const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({})
+  const [accountBalance, setAccountBalance] = useState<number>(100000)
 
   const logEndRef = useRef<HTMLDivElement>(null)
 
@@ -82,11 +84,20 @@ export default function BinanceSimTradingPage() {
     }
   }, [logs])
 
-  // Initialize simulated account on mount
+  // Initialize simulated account from user profile
   useEffect(() => {
     const initializeSimulation = async () => {
+      if (!profile || !db || !user) {
+        setLogs(prev => [...prev, `[SYSTEM] Loading user profile...`])
+        return
+      }
+
       setIsLoadingBinance(true)
       try {
+        // Get account size from user settings (defaults to 100,000)
+        const userAccountSize = parseFloat(profile.accountSize || '100000')
+        setAccountBalance(userAccountSize)
+
         // Fetch real market data from Binance public API
         const response = await fetch('/api/binance/ticker')
         if (response.ok) {
@@ -96,23 +107,25 @@ export default function BinanceSimTradingPage() {
           }
         }
         
-        // Initialize simulated account with virtual funds
+        // Initialize simulated account with user's demo account size
         setBinanceAccount({
           status: 'Simulation Active',
           balances: {
-            USDT: 10000,
+            USDT: userAccountSize,
             BTC: 0.5
           },
           totalAssetOfBtc: '1.5'
         })
-        setLogs(prev => [...prev, `[SYSTEM] Simulation account initialized: 10,000 USDT + 0.5 BTC`])
+        setLogs(prev => [...prev, `[SYSTEM] Simulation account initialized: $${userAccountSize.toLocaleString()} USDT + 0.5 BTC`])
       } catch (error: any) {
         setLogs(prev => [...prev, `[WARNING] Could not fetch live data: ${error.message} - Using simulation mode`])
         // Still initialize account in simulation even if data fetch fails
+        const userAccountSize = parseFloat(profile?.accountSize || '100000')
+        setAccountBalance(userAccountSize)
         setBinanceAccount({
           status: 'Simulation Active',
           balances: {
-            USDT: 10000,
+            USDT: userAccountSize,
             BTC: 0.5
           },
           totalAssetOfBtc: '1.5'
@@ -121,7 +134,7 @@ export default function BinanceSimTradingPage() {
       setIsLoadingBinance(false)
     }
     initializeSimulation()
-  }, [])
+  }, [profile, db, user])
 
   // Fetch current prices
   useEffect(() => {
@@ -161,7 +174,7 @@ export default function BinanceSimTradingPage() {
       return
     }
 
-    setLogs(prev => [...prev, `[SDK] Placing ${side} order for ${qty} ${symbol} on Binance Testnet...`])
+    setLogs(prev => [...prev, `[SDK] Placing ${side} order for ${qty} ${symbol} on Binance Simulation...`])
 
     try {
       const currentPrice = currentPrices[symbol] || 0
@@ -171,19 +184,52 @@ export default function BinanceSimTradingPage() {
         return
       }
 
+      // Validate account exists
+      if (!binanceAccount || binanceAccount.balances === undefined) {
+        setLogs(prev => [...prev, `[ERROR] Account not initialized. Please refresh the page.`])
+        toast({ variant: 'destructive', title: 'Account Error', description: 'Account not properly initialized' })
+        return
+      }
+
       // Simulate order placement
       const orderId = Math.floor(Math.random() * 1000000)
       const orderValue = qty * currentPrice
       
       // Update simulated balance
+      let updatedBalance = accountBalance
       if (side === 'BUY') {
-        if (binanceAccount?.balances?.USDT < orderValue) {
-          setLogs(prev => [...prev, `[ERROR] Insufficient USDT balance for this order`])
-          toast({ variant: 'destructive', title: 'Insufficient Balance', description: 'Not enough USDT to buy' })
+        if (accountBalance < orderValue) {
+          setLogs(prev => [...prev, `[ERROR] Insufficient USDT balance. Required: $${orderValue.toFixed(2)}, Available: $${accountBalance.toFixed(2)}`])
+          toast({ variant: 'destructive', title: 'Insufficient Balance', description: `Need $${orderValue.toFixed(2)} but only have $${accountBalance.toFixed(2)}` })
           setIsPlacingOrder(false)
           return
         }
-        binanceAccount.balances.USDT -= orderValue
+        updatedBalance = accountBalance - orderValue
+      } else {
+        // SELL - assume selling the quantity at current price
+        updatedBalance = accountBalance + orderValue
+      }
+      
+      // Update local account state
+      setAccountBalance(updatedBalance)
+      setBinanceAccount({
+        ...binanceAccount,
+        balances: {
+          ...binanceAccount.balances,
+          USDT: updatedBalance
+        }
+      })
+
+      // Persist balance update to Firestore
+      if (db && user) {
+        try {
+          await setDocumentNonBlocking(doc(db, 'users', user.uid), {
+            binanceSimBalance: updatedBalance,
+            updatedAt: serverTimestamp(),
+          }, { merge: true })
+        } catch (saveError) {
+          setLogs(prev => [...prev, `[WARNING] Could not save balance to profile`])
+        }
       }
 
       setLogs(prev => [...prev, `[SUCCESS] Order placed: ${orderId}. ${qty} ${symbol} ${side} at $${currentPrice.toFixed(2)}`])
